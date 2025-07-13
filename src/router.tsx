@@ -6,7 +6,7 @@ import Index from './pages/Index'
 import Notfound from './pages/Notfound'
 import PokemonPage from './pages/pokemonPage'
 
-const router = createBrowserRouter([
+export const appRoutes = [
   {
     path: '/',
     element: (
@@ -31,6 +31,9 @@ const router = createBrowserRouter([
       </Layout>
     ),
   },
+]
+
+const defaultRoutes = [
   {
     path: '*',
     element: (
@@ -39,6 +42,7 @@ const router = createBrowserRouter([
       </Layout>
     ),
   },
-])
+]
 
+const router = createBrowserRouter([...appRoutes, ...defaultRoutes])
 export default router
