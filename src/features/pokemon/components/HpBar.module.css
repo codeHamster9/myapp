@@ -1,0 +1,13 @@
+.lowHpPulse {
+  animation: lowHpPulse 1.5s infinite;
+}
+
+@keyframes lowHpPulse {
+  50%,
+  100% {
+    opacity: 1;
+  }
+  40% {
+    opacity: 0.8;
+  }
+}
