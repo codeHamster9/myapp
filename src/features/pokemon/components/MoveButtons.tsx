@@ -1,22 +1,61 @@
-import { Draggable } from '@/components/Dnd/Draggable'
+import { useSetAtom } from 'jotai'
+import { useEffect } from 'react'
 
-interface MoveButtonsProps {
-  moves: { name: string }[]
+import { Droppable } from '@/components/Dnd/Dropable'
+import { player1ReadyAtom, player2ReadyAtom } from '@/store/battleAtoms'
+
+type Props = {
   pokemonId: number
+  playerId?: string
+  onMoveSelect: (moveName: string) => void
+  moves: { name: string }[]
+  disabled: boolean
 }
-export function MoveButtons({ moves, pokemonId }: MoveButtonsProps) {
+
+export function MoveButtons({
+  pokemonId,
+  playerId,
+  onMoveSelect,
+  moves,
+  disabled,
+}: Props) {
+  const setPlayer1Ready = useSetAtom(player1ReadyAtom)
+  const setPlayer2Ready = useSetAtom(player2ReadyAtom)
+
+  function handleMoveClick(moveName: string) {
+    if (disabled) return
+    onMoveSelect(moveName)
+  }
+
+  useEffect(() => {
+    if (moves.length === 6) {
+      if (playerId === '1') setPlayer1Ready(true)
+      if (playerId === '2') setPlayer2Ready(true)
+    } else {
+      console.log('Moves not ready yet', moves.length)
+
+      if (playerId === '1') setPlayer1Ready(false)
+      if (playerId === '2') setPlayer2Ready(false)
+    }
+  }, [moves.length, playerId, setPlayer1Ready, setPlayer2Ready])
+
   return (
-    <div className="mt-4 grid grid-cols-2 gap-2 border rounded-lg bg-white shadow-md p-4 h-62 overflow-y-auto">
-      {moves.map((move) => (
-        <Draggable key={`-${pokemonId}-${move.name}`} id={`${move.name}`}>
+    <Droppable id={`moves-${pokemonId}`}>
+      <div className="mt-4 grid grid-cols-2 gap-2 height-24 overflow-y-auto">
+        {moves.map((move) => (
           <button
-            className={`w-full bg-gray-500 hover:bg-gray-600 px-2 py-1 rounded capitalize transition-colors text-white shadow-lg border-b-4 border-gray-800 active:border-b-2 active:translate-y-1
-                          hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-400 min-w-[6rem] `}
+            key={`-${pokemonId}-${move.name}`}
+            onClick={() => handleMoveClick(move.name)}
+            className={`px-2 py-1 rounded capitalize transition-colors text-white  ${
+              disabled
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-blue-500 hover:bg-blue-600'
+            }`}
           >
             {move.name}
           </button>
-        </Draggable>
-      ))}
-    </div>
+        ))}
+      </div>
+    </Droppable>
   )
 }

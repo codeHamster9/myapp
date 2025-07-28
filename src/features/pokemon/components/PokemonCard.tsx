@@ -2,21 +2,20 @@ import { DndContext } from '@dnd-kit/core'
 import { useAtom, useAtomValue } from 'jotai'
 import { useState } from 'react'
 
-import { Draggable } from '@/components/Dnd/Draggable'
-import { Droppable } from '@/components/Dnd/Dropable'
-
 import {
+  canStartGameAtom,
   currentTurnAtom,
   pokemonById,
   winnerAtom,
 } from '../../../store/battleAtoms'
 
 import { HpBar } from './HpBar'
+import { MoveButtons } from './MoveButtons'
 import { PokemonImage } from './PokemonImage'
 import { PokemonName } from './PokemonName'
 import { SelectMoves } from './SelectMoves'
+
 import { Move } from 'lucide-react'
-import { MoveButtons } from './MoveButtons'
 
 interface Props {
   pokemonId: number
@@ -36,6 +35,8 @@ export default function PokemonCard({
 
   const { pokemon, hp } = getPokemon(pokemonId)
   const [moves, setMoves] = useState<{ name: string }[]>([])
+
+  const canStartGame = useAtomValue(canStartGameAtom)
 
   const [offerdMoves, setOfferedMoves] = useState<{ name: string }[]>(
     pokemon.moves.slice(0, 10).map((move) => ({ name: move.move.name })),
@@ -58,11 +59,7 @@ export default function PokemonCard({
   return (
     <DndContext onDragEnd={handleDragEnd}>
       <div className="flex flex-col gap-4">
-        <div
-          className={`border rounded-lg bg-white shadow-md p-4 ${
-            winner === playerId ? 'animate-pulse' : ''
-          }`}
-        >
+        <div className={`border rounded-lg bg-white shadow-md p-4`}>
           <h2 className="text-amber-500">{playerId}</h2>
           <PokemonImage
             src={pokemon.sprites.front_default}
@@ -70,15 +67,14 @@ export default function PokemonCard({
           />
           <PokemonName name={pokemon.name} />
           <HpBar hp={hp} maxHp={pokemon.stats[0].base_stat} />
-          <SelectMoves
+          <MoveButtons
             pokemonId={pokemonId}
             onMoveSelect={onMoveSelect}
             moves={moves}
-            disabled={notMyTurn}
-            winner={winner}
+            disabled={canStartGame && notMyTurn && !winner}
           />
         </div>
-        <MoveButtons moves={offerdMoves} pokemonId={pokemonId} />
+        <SelectMoves moves={offerdMoves} pokemonId={pokemonId} />
       </div>
     </DndContext>
   )

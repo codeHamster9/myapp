@@ -1,38 +1,24 @@
-import { Droppable } from '@/components/Dnd/Dropable'
+import { Draggable } from '@/components/Dnd/Draggable'
 
-type Props = {
-  pokemonId: number
-  playerId?: string
-  onMoveSelect: (moveName: string) => void
+interface MoveButtonsProps {
   moves: { name: string }[]
-  disabled: boolean
-  winner?: string | null
+  pokemonId: number
 }
 
-export function SelectMoves({
-  pokemonId,
-  onMoveSelect,
-  moves,
-  disabled,
-  winner,
-}: Props) {
+export function SelectMoves({ moves, pokemonId }: MoveButtonsProps) {
   return (
-    <Droppable id={`moves-${pokemonId}`}>
-      <div className="mt-4 grid grid-cols-2 gap-2 height-24 overflow-y-auto">
-        {moves.map((move) => (
+    <div className="mt-4 grid grid-cols-2 gap-2 border rounded-lg bg-white shadow-md p-4 h-62 overflow-y-auto">
+      {moves.map((move) => (
+        <Draggable key={`-${pokemonId}-${move.name}`} id={`${move.name}`}>
           <button
-            key={`-${pokemonId}-${move.name}`}
-            onClick={() => onMoveSelect(move.name)}
-            className={`px-2 py-1 rounded capitalize transition-colors text-white  ${
-              disabled || winner
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-blue-500 hover:bg-blue-600'
-            }`}
+            className={`w-full bg-gray-500 hover:bg-gray-600 px-2 py-1 rounded capitalize transition-colors text-white shadow-lg border-b-4 border-gray-800 active:border-b-2 active:translate-y-1
+                          hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-400 min-w-[6rem] `}
+            disabled={true}
           >
             {move.name}
           </button>
-        ))}
-      </div>
-    </Droppable>
+        </Draggable>
+      ))}
+    </div>
   )
 }
