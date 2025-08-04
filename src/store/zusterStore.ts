@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 type Person = {
   name: {
@@ -16,15 +17,22 @@ interface Actions {
   updatePerson: (p: Person) => void
 }
 
-export const useZusterStore = create<State & Actions>((set) => ({
-  person: {
-    name: {
-      firstName: '',
-      lastName: '',
+export const useZusterStore = create<State & Actions>()(
+  persist(
+    (set) => ({
+      person: {
+        name: {
+          firstName: '',
+          lastName: '',
+        },
+        age: 0,
+      },
+      updatePerson: (person: Person) => {
+        set({ person })
+      },
+    }),
+    {
+      name: 'person-storage', // unique name for localStorage key
     },
-    age: 0,
-  },
-  updatePerson: (person: Person) => {
-    set({ person })
-  },
-}))
+  ),
+)
