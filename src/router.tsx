@@ -5,6 +5,7 @@ import ExperiencePage from './pages/experiencePage'
 import Index from './pages/Index'
 import Notfound from './pages/Notfound'
 import PokemonPage from './pages/pokemonPage'
+import ZustandPage from './pages/zustandPage'
 
 export const appRoutes = [
   {
@@ -28,6 +29,14 @@ export const appRoutes = [
     element: (
       <Layout>
         <ExperiencePage />
+      </Layout>
+    ),
+  },
+  {
+    path: '/zustand',
+    element: (
+      <Layout>
+        <ZustandPage />
       </Layout>
     ),
   },
