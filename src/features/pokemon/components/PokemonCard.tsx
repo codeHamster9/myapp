@@ -1,13 +1,7 @@
 import { DndContext } from '@dnd-kit/core'
-import { useAtom, useAtomValue } from 'jotai'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
-import {
-  canStartGameAtom,
-  currentTurnAtom,
-  pokemonById,
-  winnerAtom,
-} from '../../../store/battleAtoms'
+import useBattleStore from '@/store/battleStore'
 
 import { HpBar } from './HpBar'
 import { MoveButtons } from './MoveButtons'
@@ -15,50 +9,39 @@ import { PokemonImage } from './PokemonImage'
 import { PokemonName } from './PokemonName'
 import { SelectMoves } from './SelectMoves'
 
-import { Move } from 'lucide-react'
-
 interface Props {
   pokemonId: number
   playerId: string
-  onMoveSelect: (moveName: string) => void
 }
 
-export default function PokemonCard({
-  pokemonId,
-  playerId,
-  onMoveSelect,
-}: Props) {
-  const [getPokemon] = useAtom(pokemonById)
-  const winner = useAtomValue(winnerAtom)
-  const currentTurn = useAtomValue(currentTurnAtom)
-  const notMyTurn = currentTurn !== playerId
-
-  const { pokemon, hp } = getPokemon(pokemonId)
-  const [moves, setMoves] = useState<{ name: string }[]>([])
-
-  const canStartGame = useAtomValue(canStartGameAtom)
-
-  const [offerdMoves, setOfferedMoves] = useState<{ name: string }[]>(
-    pokemon.moves.slice(0, 10).map((move) => ({ name: move.move.name })),
+export default function PokemonCard({ pokemonId, playerId }: Props) {
+  const pokemonData = useBattleStore((state) => state.pokemons[pokemonId])
+  const pokemon = pokemonData?.pokemon
+  const offeredMoves = pokemonData?.offeredMoves || []
+  const hp = useBattleStore((state) => state.pokemons[pokemonId]?.hp || 0)
+  const { currentPlayer, winner, canStartGame } = useBattleStore(
+    (state) => state,
   )
+
+  const notMyTurn = currentPlayer !== playerId
+  const [moves, setMoves] = useState<{ name: string }[]>([])
+  // const [offeredMoves, setOfferedMoves] = useState<{ name: string }[]>([])
+
   if (!pokemon) return null
+
+  // console.log('PokemonCard', offeredMoves)
 
   function handleDragEnd(event: any) {
     const { active, over } = event
 
     if (over && active.id !== over.id && moves.length < 6) {
       setMoves([...moves, { name: active.id as string }])
-      setOfferedMoves(
-        offerdMoves.filter(
-          (move) => move.name !== active.id.replace('move-', ''),
-        ),
-      )
     }
   }
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-">
         <div className={`border rounded-lg bg-white shadow-md p-4`}>
           <h2 className="text-amber-500">{playerId}</h2>
           <PokemonImage
@@ -69,12 +52,11 @@ export default function PokemonCard({
           <HpBar hp={hp} maxHp={pokemon.stats[0].base_stat} />
           <MoveButtons
             pokemonId={pokemonId}
-            onMoveSelect={onMoveSelect}
             moves={moves}
-            disabled={canStartGame && notMyTurn && !winner}
+            disabled={canStartGame() && notMyTurn && !winner}
           />
         </div>
-        <SelectMoves moves={offerdMoves} pokemonId={pokemonId} />
+        <SelectMoves moves={offeredMoves} pokemonId={pokemonId} />
       </div>
     </DndContext>
   )

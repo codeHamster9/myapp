@@ -1,11 +1,10 @@
-import { useAtomValue } from 'jotai'
 import { useEffect, useRef } from 'react'
 
-import { gameLogAtom } from '../../../store/battleAtoms'
+import useBattleStore from '@/store/battleStore'
 
 export default function BattleLog() {
   const logContainerRef = useRef<HTMLDivElement>(null)
-  const logs = useAtomValue(gameLogAtom)
+  const logs = useBattleStore((state) => state.gameLog)
 
   useEffect(() => {
     if (logContainerRef.current) {

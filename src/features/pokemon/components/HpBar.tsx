@@ -1,11 +1,11 @@
 interface HpBarProps {
-  hp: number;
-  maxHp: number;
+  hp: number
+  maxHp: number
 }
 export function HpBar({ hp, maxHp }: HpBarProps) {
-  if (hp < 0) hp = 0;
-  const percent = (hp / maxHp) * 100;
-  const barColor = hp < maxHp * 0.2 ? "#ef4444" : undefined;
+  if (hp < 0) hp = 0
+  const percent = (hp / maxHp) * 100
+  const barColor = hp < maxHp * 0.2 ? '#ef4444' : undefined
   return (
     <div className="mt-2">
       <div className="bg-gray-200 h-4 rounded-full overflow-hidden">
@@ -18,5 +18,5 @@ export function HpBar({ hp, maxHp }: HpBarProps) {
         HP: {hp}/{maxHp}
       </p>
     </div>
-  );
+  )
 }

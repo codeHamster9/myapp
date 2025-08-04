@@ -14,6 +14,12 @@ export interface Pokemon {
       url: string
     }
   }>
+  offeredMoves: Array<{
+    move: {
+      name: string
+      url: string
+    }
+  }>
 }
 
 export interface Move {

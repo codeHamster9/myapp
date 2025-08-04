@@ -1,55 +1,33 @@
-import { useSetAtom } from 'jotai'
-import { useEffect } from 'react'
-
 import { Droppable } from '@/components/Dnd/Dropable'
-import { player1ReadyAtom, player2ReadyAtom } from '@/store/battleAtoms'
+import useBattleStore from '@/store/battleStore'
 
 type Props = {
   pokemonId: number
   playerId?: string
-  onMoveSelect: (moveName: string) => void
+
   moves: { name: string }[]
   disabled: boolean
 }
 
-export function MoveButtons({
-  pokemonId,
-  playerId,
-  onMoveSelect,
-  moves,
-  disabled,
-}: Props) {
-  const setPlayer1Ready = useSetAtom(player1ReadyAtom)
-  const setPlayer2Ready = useSetAtom(player2ReadyAtom)
+export function MoveButtons({ pokemonId, moves, disabled }: Props) {
+  const selectMove = useBattleStore((state) => state.selectMove)
 
   function handleMoveClick(moveName: string) {
     if (disabled) return
-    onMoveSelect(moveName)
+    selectMove(pokemonId, moveName)
   }
-
-  useEffect(() => {
-    if (moves.length === 6) {
-      if (playerId === '1') setPlayer1Ready(true)
-      if (playerId === '2') setPlayer2Ready(true)
-    } else {
-      console.log('Moves not ready yet', moves.length)
-
-      if (playerId === '1') setPlayer1Ready(false)
-      if (playerId === '2') setPlayer2Ready(false)
-    }
-  }, [moves.length, playerId, setPlayer1Ready, setPlayer2Ready])
 
   return (
     <Droppable id={`moves-${pokemonId}`}>
-      <div className="mt-4 grid grid-cols-2 gap-2 height-24 overflow-y-auto">
+      <div className="mt-4 grid grid-cols-2 gap-2 h-24 overflow-y-auto">
         {moves.map((move) => (
           <button
             key={`-${pokemonId}-${move.name}`}
             onClick={() => handleMoveClick(move.name)}
-            className={`px-2 py-1 rounded capitalize transition-colors text-white  ${
+            className={`w-full px-2 py-1 rounded capitalize transition-colors text-white shadow-lg border-b-4 ${
               disabled
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-blue-500 hover:bg-blue-600'
+                ? 'bg-gray-400 cursor-not-allowed border-gray-600'
+                : 'bg-blue-500 hover:bg-blue-600 border-blue-700 hover:-translate-y-0.5 hover:shadow-xl active:border-b-2 active:translate-y-0.5'
             }`}
           >
             {move.name}

@@ -1,15 +1,7 @@
-import { useAtomValue, useSetAtom } from 'jotai'
-
-import {
-  winnerAtom,
-  isPlayer1TurnAtom,
-  initGameAtom,
-} from '../store/battleAtoms'
+import useBattleStore from '@/store/battleStore'
 
 export const PlayersBanner = () => {
-  const winner = useAtomValue(winnerAtom)
-  const currentTurn = useAtomValue(isPlayer1TurnAtom)
-  const initGame = useSetAtom(initGameAtom)
+  const { winner, currentPlayer, initGame } = useBattleStore((state) => state)
   return (
     <>
       {winner && (
@@ -26,7 +18,7 @@ export const PlayersBanner = () => {
 
       {!winner && (
         <div className="mb-8 text-center text-xl font-semibold text-gray-700">
-          Current Turn: {currentTurn}
+          Current Turn: {currentPlayer}
         </div>
       )}
     </>

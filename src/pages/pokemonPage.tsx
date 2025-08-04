@@ -1,4 +1,3 @@
-import { useAtom, useAtomValue } from 'jotai'
 import React, { useEffect } from 'react'
 
 import { PlayersBanner } from '../components/PlayersBanner'
@@ -6,60 +5,62 @@ import BattleLog from '../features/pokemon/components/BattleLog'
 import PokemonCard from '../features/pokemon/components/PokemonCard'
 import { usePokemon } from '../features/pokemon/services/pokemonService'
 import type { Pokemon } from '../features/pokemon/types/pokemon'
-import {
-  handleMoveAtom,
-  updatePokemonAtom,
-  player1IdAtom,
-  player2IdAtom,
-  initGameAtom,
-} from '../store/battleAtoms'
+
+import useBattleStore from '@/store/battleStore'
 
 export default function PokemonPage() {
-  // Read-only atoms
+  const { player1Id, player2Id, initGame, updatePokemon, pokemons } =
+    useBattleStore((state) => state)
 
-  const [, handleMove] = useAtom(handleMoveAtom)
-  const [, updatePokemon] = useAtom(updatePokemonAtom)
-
-  const player1Id = useAtomValue(player1IdAtom)
-  const player2Id = useAtomValue(player2IdAtom)
-
-  const [, initGame] = useAtom(initGameAtom)
+  const pokemon1Ready = pokemons[player1Id]?.pokemon !== null
+  const pokemon2Ready = pokemons[player2Id]?.pokemon !== null
 
   // Fetch Pokemon data using React Query
-  const { data: pokemon1Data, isLoading: isLoading1 } = usePokemon(player1Id)
-  const { data: pokemon2Data, isLoading: isLoading2 } = usePokemon(player2Id)
-  // // Cleanup when component unmounts
+  const {
+    data: pokemon1Data,
+    isLoading: isLoading1,
+    isSuccess: isSuccess1,
+  } = usePokemon(player1Id)
+  const {
+    data: pokemon2Data,
+    isLoading: isLoading2,
+    isSuccess: isSuccess2,
+  } = usePokemon(player2Id)
+
   useEffect(() => {
     return () => {
       initGame()
     }
   }, [initGame])
 
+  useEffect(() => {
+    if (isSuccess1) {
+      updatePokemon(pokemon1Data as Pokemon, pokemon1Data.stats[0].base_stat)
+    }
+    if (isSuccess2) {
+      updatePokemon(pokemon2Data as Pokemon, pokemon2Data.stats[0].base_stat)
+    }
+  }, [isSuccess1, isSuccess2, pokemon1Data, pokemon2Data, updatePokemon])
+
   if (isLoading1 || isLoading2) {
     return <div className="container mx-auto p-4 text-center">Loading...</div>
   }
-  // Update Pokemon data when loaded
-  if (pokemon1Data) {
-    updatePokemon({ pokemon: pokemon1Data as Pokemon })
+
+  if (!pokemon1Ready || !pokemon2Ready) {
+    return (
+      <div className="container mx-auto p-4 text-center">
+        Initializing battle...
+      </div>
+    )
   }
-  if (pokemon2Data) {
-    updatePokemon({ pokemon: pokemon2Data as Pokemon })
-  }
+
   return (
     <main className="container mx-auto p-4">
       <PlayersBanner />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <PokemonCard
-          pokemonId={player1Id}
-          playerId={'Player 1'}
-          onMoveSelect={(moveName) => handleMove(moveName, player2Id)}
-        />
-        <PokemonCard
-          pokemonId={player2Id}
-          playerId={'Player 2'}
-          onMoveSelect={(moveName) => handleMove(moveName, player1Id)}
-        />
+        <PokemonCard pokemonId={player1Id} playerId={'Player 1'} />
+        <PokemonCard pokemonId={player2Id} playerId={'Player 2'} />
       </div>
 
       <BattleLog />
