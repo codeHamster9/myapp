@@ -6,6 +6,7 @@ import Index from './pages/Index'
 import Notfound from './pages/Notfound'
 import PokemonPage from './pages/pokemonPage'
 import ZustandPage from './pages/zustandPage'
+import PokeTablePage from './pages/pokeTable'
 
 export const appRoutes = [
   {
@@ -37,6 +38,14 @@ export const appRoutes = [
     element: (
       <Layout>
         <ZustandPage />
+      </Layout>
+    ),
+  },
+  {
+    path: '/poke-table',
+    element: (
+      <Layout>
+        <PokeTablePage />
       </Layout>
     ),
   },

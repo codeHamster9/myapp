@@ -1,6 +1,7 @@
 export interface Pokemon {
   id: number
   name: string
+  weight: string
   sprites: {
     front_default: string
   }
@@ -14,12 +15,12 @@ export interface Pokemon {
       url: string
     }
   }>
-  offeredMoves: Array<{
-    move: {
-      name: string
-      url: string
-    }
-  }>
+  // offeredMoves: Array<{
+  //   move: {
+  //     name: string
+  //     url: string
+  //   }
+  // }>
 }
 
 export interface Move {

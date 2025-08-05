@@ -14,7 +14,7 @@ export const pokemonKeys = {
 // Custom hooks for fetching data
 export const usePokemon = (id: number) => {
   console.log('usePokemon', id)
-  return useQuery({
+  return useQuery<Pokemon>({
     queryKey: pokemonKeys.detail(id),
     queryFn: async (): Promise<Pokemon> => {
       const response = await fetch(`${API_BASE}/pokemon/${id}`)
