@@ -1,13 +1,18 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
-import type { ColumnDef, SortingState } from '@tanstack/react-table'
+import type {
+  ColumnDef,
+  SortingState,
+  ColumnFiltersState,
+} from '@tanstack/react-table'
 import {
   useReactTable,
   flexRender,
   getCoreRowModel,
   createColumnHelper,
   getSortedRowModel,
+  getFilteredRowModel,
 } from '@tanstack/react-table'
-import React, { useMemo, useEffect, useRef } from 'react'
+import React, { useMemo, useEffect, useRef, useState } from 'react'
 
 import { PokemonImageModal } from '@/components/PokemonImageModal'
 import type { Pokemon } from '@/features/pokemon/types/pokemon'
@@ -71,6 +76,10 @@ const columns: ColumnDef<Pokemon, any>[] = [
 
 function SimpleTable() {
   const loadMoreRef = useRef<HTMLDivElement>(null)
+  const [globalFilter, setGlobalFilter] = useState('')
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [searchValue, setSearchValue] = useState('')
+  const [searchField, setSearchField] = useState('name')
 
   const {
     data,
@@ -106,7 +115,7 @@ function SimpleTable() {
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage && !searchValue) {
           fetchNextPage()
         }
       },
@@ -118,7 +127,7 @@ function SimpleTable() {
     }
 
     return () => observer.disconnect()
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, searchValue])
 
   const [sorting, setSorting] = React.useState<SortingState>([])
 
@@ -127,10 +136,15 @@ function SimpleTable() {
     columns,
     state: {
       sorting,
+      globalFilter,
+      columnFilters,
     },
     onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
+    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
     manualSorting: false,
   })
 
@@ -143,50 +157,91 @@ function SimpleTable() {
   }
 
   return (
-    <div className="overflow-x-auto shadow-md rounded-lg">
-      <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400 border-collapse">
-        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <th
-                  key={header.id}
-                  className="px-6 py-3"
-                  onClick={header.column.getToggleSortingHandler()}
-                >
-                  <div className="flex items-center gap-2 cursor-pointer select-none">
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext(),
-                    )}
-                    {/* Add sorting direction indicator */}
-                    {{
-                      asc: <span className="text-blue-500">▲</span>,
-                      desc: <span className="text-blue-500">▼</span>,
-                    }[header.column.getIsSorted() as string] ?? null}
-                  </div>
-                </th>
-              ))}
-            </tr>
+    <div className="space-y-4">
+      <div className="space-y-3">
+        <div className="flex gap-4">
+          <input
+            value={searchValue}
+            onChange={(e) => {
+              setSearchValue(e.target.value)
+              table
+                .getColumn(searchField)
+                ?.setFilterValue(e.target.value || undefined)
+            }}
+            placeholder={`Search by ${searchField}...`}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+          />
+        </div>
+        <div className="flex gap-4">
+          {['name', 'id', 'height', 'weight'].map((field) => (
+            <label key={field} className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="searchField"
+                value={field}
+                checked={searchField === field}
+                onChange={(e) => {
+                  table.getColumn(searchField)?.setFilterValue(undefined)
+                  setSearchField(e.target.value)
+                  table
+                    .getColumn(e.target.value)
+                    ?.setFilterValue(searchValue || undefined)
+                }}
+                className="text-blue-500"
+              />
+              <span className="capitalize">{field}</span>
+            </label>
           ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr
-              key={row.id}
-              className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-            >
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="px-6 py-4">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div ref={loadMoreRef} className="h-10 flex items-center justify-center">
-        {isFetchingNextPage && <div>Loading more...</div>}
+        </div>
+      </div>
+      <div className="overflow-x-auto shadow-md rounded-lg">
+        <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400 border-collapse">
+          <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    className="px-6 py-3"
+                    onClick={header.column.getToggleSortingHandler()}
+                  >
+                    <div className="flex items-center gap-2 cursor-pointer select-none">
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
+                      {/* Add sorting direction indicator */}
+                      {{
+                        asc: <span className="text-blue-500">▲</span>,
+                        desc: <span className="text-blue-500">▼</span>,
+                      }[header.column.getIsSorted() as string] ?? null}
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map((row) => (
+              <tr
+                key={row.id}
+                className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <td key={cell.id} className="px-6 py-4">
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div
+          ref={loadMoreRef}
+          className="h-10 flex items-center justify-center"
+        >
+          {isFetchingNextPage && <div>Loading more...</div>}
+        </div>
       </div>
     </div>
   )
