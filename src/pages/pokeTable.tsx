@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import type { ColumnDef, SortingState } from '@tanstack/react-table'
 import {
   useReactTable,
@@ -7,23 +7,30 @@ import {
   createColumnHelper,
   getSortedRowModel,
 } from '@tanstack/react-table'
-import React, { useMemo } from 'react'
+import React, { useMemo, useEffect, useRef } from 'react'
 
 import { PokemonImageModal } from '@/components/PokemonImageModal'
 import type { Pokemon } from '@/features/pokemon/types/pokemon'
 
 const columnHelper = createColumnHelper<Pokemon>()
 
-export const fetchPokemons = async (): Promise<Pokemon[]> => {
-  const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=10')
+export const fetchPokemons = async ({ pageParam = 0 }) => {
+  const limit = 20
+  const offset = pageParam * limit
+  const response = await fetch(
+    `https://pokeapi.co/api/v2/pokemon?limit=${limit}&offset=${offset}`,
+  )
   const data = await response.json()
-  const results = await Promise.all<Pokemon[]>(
+  const results = await Promise.all(
     data?.results.map(async (p: { name: string; url: string }) =>
       fetch(p.url).then(async (r) => r.json()),
     ),
   )
 
-  return results
+  return {
+    pokemons: results,
+    nextOffset: data.next ? pageParam + 1 : undefined,
+  }
 }
 
 // Use a type assertion for the columns array
@@ -63,12 +70,27 @@ const columns: ColumnDef<Pokemon, any>[] = [
 ]
 
 function SimpleTable() {
-  const { data, isLoading, isError, error } = useQuery<Pokemon[]>({
-    queryKey: ['users'],
+  const loadMoreRef = useRef<HTMLDivElement>(null)
+
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['pokemons'],
     queryFn: fetchPokemons,
-    select: (data) =>
-      data.map((d) => {
-        return {
+    getNextPageParam: (lastPage) => lastPage.nextOffset,
+    initialPageParam: 0,
+  })
+
+  const tableData = useMemo(() => {
+    return (
+      data?.pages.flatMap((page) =>
+        page.pokemons.map((d) => ({
           id: d.id,
           moves: d.moves,
           name: d.name,
@@ -76,11 +98,27 @@ function SimpleTable() {
           stats: d.stats,
           weight: d.weight,
           height: d.height,
-        }
-      }),
-  })
+        })),
+      ) ?? []
+    )
+  }, [data])
 
-  const tableData = useMemo(() => data ?? [], [data])
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage()
+        }
+      },
+      { threshold: 1 },
+    )
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current)
+    }
+
+    return () => observer.disconnect()
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
 
   const [sorting, setSorting] = React.useState<SortingState>([])
 
@@ -147,6 +185,9 @@ function SimpleTable() {
           ))}
         </tbody>
       </table>
+      <div ref={loadMoreRef} className="h-10 flex items-center justify-center">
+        {isFetchingNextPage && <div>Loading more...</div>}
+      </div>
     </div>
   )
 }
