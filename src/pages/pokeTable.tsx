@@ -12,6 +12,7 @@ import {
   getSortedRowModel,
   getFilteredRowModel,
 } from '@tanstack/react-table'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import React, { useMemo, useEffect, useRef, useState } from 'react'
 
 import { PokemonImageModal } from '@/components/PokemonImageModal'
@@ -76,6 +77,7 @@ const columns: ColumnDef<Pokemon, any>[] = [
 
 function SimpleTable() {
   const loadMoreRef = useRef<HTMLDivElement>(null)
+  const tableContainerRef = useRef<HTMLDivElement>(null)
   const [globalFilter, setGlobalFilter] = useState('')
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [searchValue, setSearchValue] = useState('')
@@ -115,7 +117,12 @@ function SimpleTable() {
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage && !searchValue) {
+        if (
+          entries[0].isIntersecting &&
+          hasNextPage &&
+          !isFetchingNextPage &&
+          !searchValue
+        ) {
           fetchNextPage()
         }
       },
@@ -146,6 +153,15 @@ function SimpleTable() {
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     manualSorting: false,
+  })
+
+  const { rows } = table.getRowModel()
+
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => 80,
+    overscan: 10,
   })
 
   if (isLoading) {
@@ -194,9 +210,12 @@ function SimpleTable() {
           ))}
         </div>
       </div>
-      <div className="overflow-x-auto shadow-md rounded-lg">
-        <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400 border-collapse">
-          <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+      <div
+        ref={tableContainerRef}
+        className="overflow-auto shadow-md rounded-lg h-full"
+      >
+        <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400 border-collapse table-fixed">
+          <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky top-0">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -210,7 +229,6 @@ function SimpleTable() {
                         header.column.columnDef.header,
                         header.getContext(),
                       )}
-                      {/* Add sorting direction indicator */}
                       {{
                         asc: <span className="text-blue-500">▲</span>,
                         desc: <span className="text-blue-500">▼</span>,
@@ -221,19 +239,44 @@ function SimpleTable() {
               </tr>
             ))}
           </thead>
-          <tbody>
-            {table.getRowModel().rows.map((row) => (
-              <tr
-                key={row.id}
-                className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-6 py-4">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
+          <tbody
+            style={{
+              height: `${rowVirtualizer.getTotalSize()}px`,
+              position: 'relative',
+            }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const row = rows[virtualRow.index]
+              return (
+                <tr
+                  key={row.id}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: `${virtualRow.size}px`,
+                    transform: `translateY(${virtualRow.start}px)`,
+                    display: 'table',
+                    tableLayout: 'fixed',
+                  }}
+                  className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <td
+                      key={cell.id}
+                      className="px-6 py-4"
+                      style={{ display: 'table-cell' }}
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              )
+            })}
           </tbody>
         </table>
         <div
