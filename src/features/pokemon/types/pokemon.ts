@@ -2,6 +2,7 @@ export interface Pokemon {
   id: number
   name: string
   weight: string
+  height: number
   sprites: {
     front_default: string
   }

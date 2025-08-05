@@ -1,179 +1,20 @@
-// import {
-//   createColumnHelper,
-//   flexRender,
-//   getCoreRowModel,
-//   useReactTable,
-// } from '@tanstack/react-table'
-// import * as React from 'react'
-
-// import './table.css'
-// import { usePokemon } from '@/features/pokemon/services/pokemonService'
-// import { Pokemon } from '@/features/pokemon/types/pokemon'
-
-// type Person = {
-//   firstName: string
-//   lastName: string
-//   age: number
-//   visits: number
-//   status: string
-//   progress: number
-// }
-
-// const defaultData: Person[] = [
-//   {
-//     firstName: 'tanner',
-//     lastName: 'linsley',
-//     age: 24,
-//     visits: 100,
-//     status: 'In Relationship',
-//     progress: 50,
-//   },
-//   {
-//     firstName: 'tandy',
-//     lastName: 'miller',
-//     age: 40,
-//     visits: 40,
-//     status: 'Single',
-//     progress: 80,
-//   },
-//   {
-//     firstName: 'joe',
-//     lastName: 'dirte',
-//     age: 45,
-//     visits: 20,
-//     status: 'Complicated',
-//     progress: 10,
-//   },
-// ]
-
-// const columnHelper = createColumnHelper<Pokemon>()
-
-// const columns = [
-//   columnHelper.accessor('id', {
-//     cell: (info) => info.getValue(),
-//     footer: (info) => info.column.id,
-//   }),
-//   columnHelper.accessor((row) => row.name, {
-//     id: 'name',
-//     cell: (info) => <i>{info.getValue()}</i>,
-//     header: () => <span>Last Name</span>,
-//     footer: (info) => info.column.id,
-//   }),
-//   //   columnHelper.accessor('age', {
-//   //     header: () => 'Age',
-//   //     cell: (info) => info.renderValue(),
-//   //     footer: (info) => info.column.id,
-//   //   }),
-//   //   columnHelper.accessor('visits', {
-//   //     header: () => <span>Visits</span>,
-//   //     footer: (info) => info.column.id,
-//   //   }),
-//   //   columnHelper.accessor('status', {
-//   //     header: 'Status',
-//   //     footer: (info) => info.column.id,
-//   //   }),
-//   //   columnHelper.accessor('progress', {
-//   //     header: 'Profile Progress',
-//   //     footer: (info) => info.column.id,
-//   //   }),
-// ]
-
-// function PokeTablePage() {
-//   //   const [data, _setData] = React.useState(() => [...defaultData])
-//   const rerender = React.useReducer(() => ({}), {})[1]
-
-//   const { data: pokemon1Data } = usePokemon(1)
-
-//   const tableData = React.useMemo(() => [pokemon1Data] ?? [], [pokemon1Data])
-//   const table = useReactTable({
-//     data: tableData,
-//     columns,
-//     getCoreRowModel: getCoreRowModel(),
-//   })
-
-//   return (
-//     <div className="p-2">
-//       <table>
-//         <thead>
-//           {table.getHeaderGroups().map((headerGroup) => (
-//             <tr key={headerGroup.id}>
-//               {headerGroup.headers.map((header) => (
-//                 <th key={header.id}>
-//                   {header.isPlaceholder
-//                     ? null
-//                     : flexRender(
-//                         header.column.columnDef.header,
-//                         header.getContext(),
-//                       )}
-//                 </th>
-//               ))}
-//             </tr>
-//           ))}
-//         </thead>
-//         <tbody>
-//           {table.getRowModel().rows.map((row) => (
-//             <tr key={row.id}>
-//               {row.getVisibleCells().map((cell) => (
-//                 <td key={cell.id}>
-//                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
-//                 </td>
-//               ))}
-//             </tr>
-//           ))}
-//         </tbody>
-//         <tfoot>
-//           {table.getFooterGroups().map((footerGroup) => (
-//             <tr key={footerGroup.id}>
-//               {footerGroup.headers.map((header) => (
-//                 <th key={header.id}>
-//                   {header.isPlaceholder
-//                     ? null
-//                     : flexRender(
-//                         header.column.columnDef.footer,
-//                         header.getContext(),
-//                       )}
-//                 </th>
-//               ))}
-//             </tr>
-//           ))}
-//         </tfoot>
-//       </table>
-//       <div className="h-4" />
-//       <button onClick={() => rerender()} className="border p-2">
-//         Rerender
-//       </button>
-//     </div>
-//   )
-// }
-
-// export default PokeTablePage
-
-// src/types.ts
-
-// Define the shape of a single user object from the API
-// src/components/SimpleTable.tsx
-import React, { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import type { ColumnDef, SortingState } from '@tanstack/react-table'
 import {
   useReactTable,
   flexRender,
   getCoreRowModel,
   createColumnHelper,
-  ColumnDef,
   getSortedRowModel,
-  SortingState,
 } from '@tanstack/react-table'
-import { Pokemon } from '@/features/pokemon/types/pokemon'
-// import { fetchUsers } from '../api'
-// import { User } from '../types' // Import the User interface
+import React, { useMemo } from 'react'
 
-// src/types.ts
-
-// Define the shape of a single user object from the API
+import { PokemonImageModal } from '@/components/PokemonImageModal'
+import type { Pokemon } from '@/features/pokemon/types/pokemon'
 
 const columnHelper = createColumnHelper<Pokemon>()
 
-export const fetchUsers = async (): Promise<Pokemon[]> => {
+export const fetchPokemons = async (): Promise<Pokemon[]> => {
   const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=10')
   const data = await response.json()
   const results = await Promise.all<Pokemon[]>(
@@ -195,8 +36,28 @@ const columns: ColumnDef<Pokemon, any>[] = [
     header: 'Name',
     cell: (info) => info.getValue(),
   }),
+  columnHelper.accessor('sprites', {
+    header: 'Image',
+    cell: (info) => {
+      const sprites = info.getValue()
+      const pokemon = info.row.original
+      return (
+        <PokemonImageModal sprites={sprites} pokemonName={pokemon.name}>
+          <img
+            src={sprites?.front_default}
+            alt={`${pokemon.name} sprite`}
+            className="w-16 h-16 object-contain cursor-pointer hover:scale-110 transition-transform"
+          />
+        </PokemonImageModal>
+      )
+    },
+  }),
   columnHelper.accessor('weight', {
-    header: 'weight',
+    header: 'Weight',
+    cell: (info) => info.getValue(),
+  }),
+  columnHelper.accessor('height', {
+    header: 'Height',
     cell: (info) => info.getValue(),
   }),
 ]
@@ -204,7 +65,7 @@ const columns: ColumnDef<Pokemon, any>[] = [
 function SimpleTable() {
   const { data, isLoading, isError, error } = useQuery<Pokemon[]>({
     queryKey: ['users'],
-    queryFn: fetchUsers,
+    queryFn: fetchPokemons,
     select: (data) =>
       data.map((d) => {
         return {
@@ -214,6 +75,7 @@ function SimpleTable() {
           sprites: d.sprites,
           stats: d.stats,
           weight: d.weight,
+          height: d.height,
         }
       }),
   })
@@ -239,7 +101,6 @@ function SimpleTable() {
   }
 
   if (isError) {
-    // TypeScript will correctly infer that 'error' is an 'Error' object
     return <div>Error: {error.message}</div>
   }
 
