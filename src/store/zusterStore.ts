@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { immer } from 'zustand/middleware/immer'
 
-type Person = {
+export type Person = {
   name: {
     firstName: string
     lastName: string
@@ -19,18 +20,18 @@ interface Actions {
 
 export const useZusterStore = create<State & Actions>()(
   persist(
-    (set) => ({
+    immer((set) => ({
       person: {
         name: {
-          firstName: '',
-          lastName: '',
+          firstName: 'drone',
+          lastName: 'clone',
         },
-        age: 0,
+        age: 230,
       },
       updatePerson: (person: Person) => {
         set({ person })
       },
-    }),
+    })),
     {
       name: 'person-storage', // unique name for localStorage key
     },

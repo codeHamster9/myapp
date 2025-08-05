@@ -1,5 +1,5 @@
 import { Input } from '@/components/ui/input'
-import { useZusterStore } from '@/store/zusterStore'
+import { type Person, useZusterStore } from '@/store/zusterStore'
 
 export default () => {
   const { person, updatePerson } = useZusterStore((state) => state)
