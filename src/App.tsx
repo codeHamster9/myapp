@@ -4,6 +4,7 @@ import React from 'react'
 import { RouterProvider } from 'react-router'
 
 import ErrorBoundary from './components/ErrorBoundary'
+import { ThemeProvider } from './contexts/ThemeContext'
 import router from './router'
 
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
@@ -21,7 +22,9 @@ const App: React.FC = () => (
   <QueryClientProvider client={queryClient}>
     <ErrorBoundary>
       <ClerkProvider publishableKey={publishableKey}>
-        <RouterProvider router={router} />
+        <ThemeProvider>
+          <RouterProvider router={router} />
+        </ThemeProvider>
       </ClerkProvider>
     </ErrorBoundary>
   </QueryClientProvider>

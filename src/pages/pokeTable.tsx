@@ -44,13 +44,11 @@ const columns: ColumnDef<Pokemon, any>[] = [
   columnHelper.accessor('id', {
     header: 'ID',
     cell: (info) => info.getValue(),
-  }),
-  columnHelper.accessor('name', {
-    header: 'Name',
-    cell: (info) => info.getValue(),
+    size: 40,
   }),
   columnHelper.accessor('sprites', {
     header: 'Image',
+    size: 80,
     cell: (info) => {
       const sprites = info.getValue()
       const pokemon = info.row.original
@@ -65,6 +63,11 @@ const columns: ColumnDef<Pokemon, any>[] = [
       )
     },
   }),
+  columnHelper.accessor('name', {
+    header: 'Name',
+    cell: (info) => info.getValue(),
+  }),
+
   columnHelper.accessor('weight', {
     header: 'Weight',
     cell: (info) => info.getValue(),
@@ -173,9 +176,9 @@ function SimpleTable() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-4">
       <div className="space-y-3">
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-center">
           <input
             value={searchValue}
             onChange={(e) => {
@@ -185,7 +188,7 @@ function SimpleTable() {
                 ?.setFilterValue(e.target.value || undefined)
             }}
             placeholder={`Search by ${searchField}...`}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800"
           />
         </div>
         <div className="flex gap-4">
@@ -222,6 +225,7 @@ function SimpleTable() {
                   <th
                     key={header.id}
                     className="px-6 py-3"
+                    style={{ width: header.getSize() }}
                     onClick={header.column.getToggleSortingHandler()}
                   >
                     <div className="flex items-center gap-2 cursor-pointer select-none">
@@ -266,7 +270,10 @@ function SimpleTable() {
                     <td
                       key={cell.id}
                       className="px-6 py-4"
-                      style={{ display: 'table-cell' }}
+                      style={{
+                        display: 'table-cell',
+                        width: cell.column.getSize(),
+                      }}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
