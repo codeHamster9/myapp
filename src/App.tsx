@@ -21,11 +21,11 @@ const queryClient = new QueryClient({
 const App: React.FC = () => (
   <QueryClientProvider client={queryClient}>
     <ErrorBoundary>
-      <ClerkProvider publishableKey={publishableKey}>
-        <ThemeProvider>
+      <ThemeProvider>
+        <ClerkProvider publishableKey={publishableKey}>
           <RouterProvider router={router} />
-        </ThemeProvider>
-      </ClerkProvider>
+        </ClerkProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   </QueryClientProvider>
 )
