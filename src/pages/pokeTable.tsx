@@ -16,6 +16,9 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import React, { useMemo, useEffect, useRef, useState } from 'react'
 
 import { PokemonImageModal } from '@/components/PokemonImageModal'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import type { Pokemon } from '@/features/pokemon/types/pokemon'
 
 const columnHelper = createColumnHelper<Pokemon>()
@@ -179,7 +182,7 @@ function SimpleTable() {
     <div className="space-y-4 p-4">
       <div className="space-y-3">
         <div className="flex gap-4 items-center">
-          <input
+          <Input
             value={searchValue}
             onChange={(e) => {
               setSearchValue(e.target.value)
@@ -188,30 +191,29 @@ function SimpleTable() {
                 ?.setFilterValue(e.target.value || undefined)
             }}
             placeholder={`Search by ${searchField}...`}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800"
           />
         </div>
-        <div className="flex gap-4">
+        <RadioGroup
+          value={searchField}
+          onValueChange={(value) => {
+            table.getColumn(searchField)?.setFilterValue(undefined)
+            setSearchField(value)
+            table.getColumn(value)?.setFilterValue(searchValue || undefined)
+          }}
+          className="flex gap-4"
+        >
           {['name', 'id', 'height', 'weight'].map((field) => (
-            <label key={field} className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="searchField"
-                value={field}
-                checked={searchField === field}
-                onChange={(e) => {
-                  table.getColumn(searchField)?.setFilterValue(undefined)
-                  setSearchField(e.target.value)
-                  table
-                    .getColumn(e.target.value)
-                    ?.setFilterValue(searchValue || undefined)
-                }}
-                className="text-blue-500"
-              />
-              <span className="capitalize">{field}</span>
-            </label>
+            <div key={field} className="flex items-center gap-2">
+              <RadioGroupItem value={field} id={field} />
+              <Label
+                htmlFor={field}
+                className="capitalize cursor-pointer text-gray-900 dark:text-gray-100"
+              >
+                {field}
+              </Label>
+            </div>
           ))}
-        </div>
+        </RadioGroup>
       </div>
       <div
         ref={tableContainerRef}
