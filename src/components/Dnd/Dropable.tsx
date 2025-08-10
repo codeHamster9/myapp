@@ -13,7 +13,7 @@ export function Droppable({
   })
   const style = {
     color: isOver ? 'green' : undefined,
-    height: '200px',
+    // height: '200px',
     border: '2px dashed gray',
     padding: '10px',
     backgroundColor: isOver ? '#f0fff4' : '#fff',

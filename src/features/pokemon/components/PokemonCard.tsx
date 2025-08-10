@@ -40,8 +40,8 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
   }
 
   return (
-    <DndContext onDragEnd={handleDragEnd}>
-      <div className="flex flex-col gap-">
+    <div className="flex flex-col gap-">
+      <DndContext onDragEnd={handleDragEnd}>
         <div className={`border rounded-lg bg-white shadow-md p-4`}>
           <h2 className="text-amber-500">{playerId}</h2>
           <PokemonImage
@@ -57,7 +57,7 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
           />
         </div>
         <SelectMoves moves={offeredMoves} pokemonId={pokemonId} />
-      </div>
-    </DndContext>
+      </DndContext>
+    </div>
   )
 }
