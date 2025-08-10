@@ -15,10 +15,10 @@ import {
 import { useVirtualizer } from '@tanstack/react-virtual'
 import React, { useMemo, useEffect, useRef, useState } from 'react'
 
-import { PokemonImageModal } from '@/components/PokemonImageModal'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { PokemonImageModal } from '@/features/pokemon/components/PokemonImageModal'
 import type { Pokemon } from '@/features/pokemon/types/pokemon'
 
 const columnHelper = createColumnHelper<Pokemon>()
