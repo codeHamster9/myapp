@@ -5,9 +5,9 @@ interface MoveButtonsProps {
   pokemonId: number
 }
 
-export function SelectMoves({ moves, pokemonId }: MoveButtonsProps) {
+export function PokemonAvailableMoves({ moves, pokemonId }: MoveButtonsProps) {
   return (
-    <div className="mt-4 grid grid-cols-2 gap-2 gap-y-2 border rounded-lg bg-white shadow-md p-4  overflow-y-auto">
+    <div className="mt-4 grid grid-cols-2 gap-2 gap-y-2 border rounded-lg bg-white shadow-md p-4 min-h-20 overflow-y-auto">
       {moves.map((move) => (
         <Draggable key={`-${pokemonId}-${move}`} id={`${move}`}>
           <button

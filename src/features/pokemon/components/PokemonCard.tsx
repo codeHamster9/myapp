@@ -1,13 +1,13 @@
 import { DndContext } from '@dnd-kit/core'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import useBattleStore from '@/store/battleStore'
 
 import { HpBar } from './HpBar'
-import { MoveButtons } from './MoveButtons'
+import { PokemonAvailableMoves } from './PokemonAvailableMoves'
 import { PokemonImage } from './PokemonImage'
 import { PokemonName } from './PokemonName'
-import { SelectMoves } from './SelectMoves'
+import { PokemonSelectedMoves } from './PokemonSelectedMoves'
 
 interface Props {
   pokemonId: number
@@ -25,17 +25,20 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
 
   const notMyTurn = currentPlayer !== playerId
   const [moves, setMoves] = useState<{ name: string }[]>([])
-  // const [offeredMoves, setOfferedMoves] = useState<{ name: string }[]>([])
+  const [usedMoves, setUsedMoves] = useState<string[]>([])
 
   if (!pokemon) return null
 
-  // console.log('PokemonCard', offeredMoves)
+  const availableMoves = offeredMoves.filter(
+    (move) => !usedMoves.includes(move),
+  )
 
   function handleDragEnd(event: any) {
     const { active, over } = event
 
     if (over && active.id !== over.id && moves.length < 6) {
       setMoves([...moves, { name: active.id as string }])
+      setUsedMoves([...usedMoves, active.id as string])
     }
   }
 
@@ -50,13 +53,13 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
           />
           <PokemonName name={pokemon.name} />
           <HpBar hp={hp} maxHp={pokemon.stats[0].base_stat} />
-          <MoveButtons
+          <PokemonSelectedMoves
             pokemonId={pokemonId}
             moves={moves}
             disabled={canStartGame() && notMyTurn && !winner}
           />
         </div>
-        <SelectMoves moves={offeredMoves} pokemonId={pokemonId} />
+        <PokemonAvailableMoves moves={availableMoves} pokemonId={pokemonId} />
       </DndContext>
     </div>
   )

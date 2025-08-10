@@ -9,7 +9,7 @@ type Props = {
   disabled: boolean
 }
 
-export function MoveButtons({ pokemonId, moves, disabled }: Props) {
+export function PokemonSelectedMoves({ pokemonId, moves, disabled }: Props) {
   const selectMove = useBattleStore((state) => state.selectMove)
 
   function handleMoveClick(moveName: string) {
