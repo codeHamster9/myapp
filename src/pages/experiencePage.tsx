@@ -1,7 +1,11 @@
 import React from 'react'
 
+import CategoryFilter from '@/features/experience-search/components/CategoryFilter'
+import { ExperienceSearchBar } from '@/features/experience-search/components/ExperienceSearchBar'
+import ItemGrid from '@/features/experience-search/components/ItemGrid'
+
 import { items } from '../data/items'
-import SearchSection from '../features/experience-search/components/SearchSection'
+// import SearchSection from '../features/experience-search/components/SearchSection'
 
 export default function HomePage() {
   return (
@@ -10,7 +14,13 @@ export default function HomePage() {
         <h1 className="text-3xl font-bold text-gray-800 mb-8">
           Discover Experiences
         </h1>
-        <SearchSection items={items} />
+        <>
+          <div className="flex flex-col md:flex-row gap-4 mb-8">
+            <ExperienceSearchBar />
+            <CategoryFilter items={items} />
+          </div>
+          <ItemGrid items={items} />
+        </>
       </div>
     </div>
   )

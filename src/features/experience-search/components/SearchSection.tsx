@@ -17,12 +17,6 @@ export default function SearchSection({ items }: SearchSectionProps) {
   //console.info('renderCount searchSection:', renderCount)
 
   return (
-    <>
-      <div className="flex flex-col md:flex-row gap-4 mb-8">
-        <ExperienceSearchBar />
-        <CategoryFilter items={items} />
-      </div>
-      <ItemGrid items={items} />
-    </>
+   
   )
 }
