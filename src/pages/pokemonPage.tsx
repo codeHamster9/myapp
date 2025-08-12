@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react'
 
+import useBattleStore from '@/store/battleStore'
+
 import { PlayersBanner } from '../components/PlayersBanner'
 import BattleLog from '../features/pokemon/components/BattleLog'
 import PokemonCard from '../features/pokemon/components/PokemonCard'
 import { usePokemon } from '../features/pokemon/services/pokemonService'
 import type { Pokemon } from '../features/pokemon/types/pokemon'
-
-import useBattleStore from '@/store/battleStore'
 
 export default function PokemonPage() {
   const { player1Id, player2Id, initGame, updatePokemon, pokemons } =

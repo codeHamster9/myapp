@@ -1,4 +1,5 @@
-import { StoryObj, Meta } from '@storybook/react'
+import type { StoryObj, Meta } from '@storybook/react'
+
 import SearchBar from '..'
 
 type Story = StoryObj<typeof meta>

@@ -8,7 +8,6 @@ import Notfound from './pages/Notfound'
 import PokemonPage from './pages/pokemonPage'
 import PokeTablePage from './pages/pokeTable'
 import ZustandPage from './pages/zustandPage'
-import { Suspense } from 'react'
 
 export const appRoutes = [
   {

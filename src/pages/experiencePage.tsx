@@ -1,4 +1,4 @@
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
 
 import CategoryFilter from '@/features/experience-search/components/CategoryFilter'
 import { ExperienceSearchBar } from '@/features/experience-search/components/ExperienceSearchBar'
@@ -17,14 +17,6 @@ export default function ExperiencePage() {
     queryFn: fetchItems,
   })
 
-  // if (isLoading) {
-  //   return (
-  //     <div className="h-full min-h-full flex items-center justify-center text-black">
-  //       {' '}
-  //       Loading...
-  //     </div>
-  //   )
-  // }
   return (
     <div className="min-h-screen p-6 md:p-8 ">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 md:p-8">
