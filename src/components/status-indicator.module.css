@@ -1,0 +1,38 @@
+:root {
+  --status-success-color: #22c55e;
+  --status-error-color: #ef4444;
+}
+
+.statusContainer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.statusIcon {
+  width: 16px;
+  height: 16px;
+  color: black;
+}
+
+.statusText {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.ontime {
+  color: var(--status-success-color);
+}
+
+.ontime + .statusIcon {
+  color: var(--status-success-color);
+}
+
+.delayed {
+  color: var(--status-error-color);
+}
+
+.delayed + .statusIcon {
+  color: var(--status-error-color);
+}

@@ -1,0 +1,102 @@
+:root {
+  --ticket-background: #e5e7eb;
+  --ticket-border: #e5e7eb;
+  --ticket-shadow: #e5e7eb; /* Updated shadow color to match ticket background */
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --disabled-background: #f9fafb;
+  --disabled-text: #9ca3af;
+}
+
+.ticket {
+  background: var(--ticket-background);
+  border-radius: 16px;
+  /* border: 1px solid var(--ticket-border); */
+  padding: 24px;
+  box-shadow: 0 1px 3px 0 var(--ticket-shadow);
+  width: 400px;
+  max-width: 400px;
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+}
+
+/* Modified perforations to show only bottom half of circles as cutouts */
+.ticket::before,
+.ticket::after {
+  content: '';
+  position: absolute;
+  right: 80px;
+  width: 30px;
+  height: 15px;
+  background: #f3f4f6;
+  border-radius: 0 0 10px 10px;
+  border: 1px solid var(--ticket-border);
+  border-top: none;
+  z-index: 3;
+}
+
+.ticket::before {
+  top: 0;
+  border-radius: 0 0 15px 15px;
+}
+
+.ticket::after {
+  bottom: 0;
+  border-radius: 15px 15px 0 0;
+  border-top: 1px solid var(--ticket-border);
+  border-bottom: none;
+}
+
+.ticket.canceled::before,
+.ticket.canceled::after {
+  background: #f3f4f6;
+  border-color: var(--ticket-border);
+}
+
+/* Added canceled state styling */
+.ticket.canceled {
+  /* background: var(--disabled-background); */
+  opacity: 0.8;
+}
+
+.ticket.canceled .airport,
+.ticket.canceled .carrier,
+.ticket.canceled .dateTime {
+  color: var(--disabled-text);
+}
+
+.ticket.canceled .arrowIcon {
+  color: var(--disabled-text);
+}
+
+.routeContainer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.airport {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.arrowIcon {
+  width: 20px;
+  height: 20px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.carrier {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.dateTime {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
