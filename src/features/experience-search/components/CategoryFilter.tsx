@@ -16,7 +16,6 @@ import {
 
 interface CategoryFilterProps {
   items: Item[]
-  date: Date
 }
 
 export default function CategoryFilter({ items }: CategoryFilterProps) {

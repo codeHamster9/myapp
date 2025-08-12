@@ -1,10 +1,9 @@
-import React, { useEffect } from 'react'
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 
 import CategoryFilter from '@/features/experience-search/components/CategoryFilter'
 import { ExperienceSearchBar } from '@/features/experience-search/components/ExperienceSearchBar'
 import ItemGrid from '@/features/experience-search/components/ItemGrid'
 import type { Item } from '@/features/experience-search/types'
-import { useQuery } from '@tanstack/react-query'
 
 const fetchItems = async (): Promise<Item[]> => {
   const response = await fetch('/api/items')
@@ -12,31 +11,20 @@ const fetchItems = async (): Promise<Item[]> => {
   return data
 }
 
-export default function HomePage() {
-  // const [items, setItems] = React.useState<Item[]>([])
-  // useEffect(() => {
-  //   fetchItems().then((data) => {
-  //     setItems(data)
-  //   })
-  // }, [])
-
-  const {
-    data: items,
-    isLoading,
-    error,
-  } = useQuery({
+export default function ExperiencePage() {
+  const { data: items } = useSuspenseQuery({
     queryKey: ['items'],
     queryFn: fetchItems,
   })
 
-  if (isLoading) {
-    return (
-      <div className="h-full min-h-full flex items-center justify-center text-black">
-        {' '}
-        Loading...
-      </div>
-    )
-  }
+  // if (isLoading) {
+  //   return (
+  //     <div className="h-full min-h-full flex items-center justify-center text-black">
+  //       {' '}
+  //       Loading...
+  //     </div>
+  //   )
+  // }
   return (
     <div className="min-h-screen p-6 md:p-8 ">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 md:p-8">
