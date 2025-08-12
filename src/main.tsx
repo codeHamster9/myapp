@@ -13,5 +13,9 @@ import('../mocks/browser')
     return worker.start()
   }) // Run <App /> when Service Worker is ready to intercept requests
   .then(() => {
-    root.render(<App />)
+    root.render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>,
+    )
   })
