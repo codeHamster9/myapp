@@ -1,53 +1,49 @@
-import { createBrowserRouter } from 'react-router'
+import { createBrowserRouter, Outlet } from 'react-router'
 
 import Layout from './components/Layout/Layout'
 import ExperiencePage from './pages/experiencePage'
+import FlightTicketsPage from './pages/FlightTickets/page'
 import Index from './pages/Index'
 import Notfound from './pages/Notfound'
 import PokemonPage from './pages/pokemonPage'
-import ZustandPage from './pages/zustandPage'
 import PokeTablePage from './pages/pokeTable'
+import ZustandPage from './pages/zustandPage'
+import { Suspense } from 'react'
 
 export const appRoutes = [
   {
     path: '/',
     element: (
       <Layout>
-        <Index />
+        <Outlet />
       </Layout>
     ),
-  },
-  {
-    path: '/pokemon',
-    element: (
-      <Layout>
-        <PokemonPage />
-      </Layout>
-    ),
-  },
-  {
-    path: '/experience',
-    element: (
-      <Layout>
-        <ExperiencePage />
-      </Layout>
-    ),
-  },
-  {
-    path: '/zustand',
-    element: (
-      <Layout>
-        <ZustandPage />
-      </Layout>
-    ),
-  },
-  {
-    path: '/poke-table',
-    element: (
-      <Layout>
-        <PokeTablePage />
-      </Layout>
-    ),
+    children: [
+      {
+        Component: Index,
+        index: true,
+      },
+      {
+        path: '/pokemon',
+        element: <PokemonPage />,
+      },
+      {
+        path: '/experience',
+        element: <ExperiencePage />,
+      },
+      {
+        path: '/zustand',
+        element: <ZustandPage />,
+      },
+      {
+        path: '/poke-table',
+        element: <PokeTablePage />,
+      },
+      {
+        path: '/flight-tickets',
+        element: <FlightTicketsPage />,
+      },
+    ],
   },
 ]
 

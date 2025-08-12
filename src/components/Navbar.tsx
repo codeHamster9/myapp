@@ -12,7 +12,7 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 w-full flex items-center justify-between px-8 py-6 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
       <div className="flex-1"></div>
       <ul className="flex gap-8 list-none p-0">
-        {appRoutes
+        {appRoutes[0].children
           .filter((route) => route.path !== '*')
           .map((route) => (
             <li key={route.path}>
