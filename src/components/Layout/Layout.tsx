@@ -6,9 +6,9 @@ import { Spinner } from '../ui/loader'
 
 import styles from './Layout.module.css'
 
-const loader = () => (
+const Loader = () => (
   <div className="h-full min-h-full flex items-center justify-center text-black">
-    <Spinner>Loading...</Spinner>
+    <Spinner size={'large'}>Loading...</Spinner>
   </div>
 )
 
@@ -17,7 +17,7 @@ const Layout: React.FC<PropsWithChildren> = ({ children, ...rest }) => {
     <main className={styles.layout} {...rest}>
       <Navbar />
       <div className={styles.container}>
-        <Suspense fallback={loader()}>{children}</Suspense>
+        <Suspense fallback={<Loader />}>{children}</Suspense>
       </div>
     </main>
   )

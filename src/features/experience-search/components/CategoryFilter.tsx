@@ -2,15 +2,16 @@ import { useAtom } from 'jotai'
 import { Filter } from 'lucide-react'
 import { useMemo } from 'react'
 
-import { Button } from '../../../components/ui/button'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from '../../../components/ui/dropdown-menu'
-import { selectedCategoryAtom } from '../../../store/searchAtoms'
+} from '@/components/ui/dropdown-menu'
+import { selectedCategoryAtom } from '@/store/searchAtoms'
+
 import type { Item } from '../types'
 
 interface CategoryFilterProps {

@@ -42,6 +42,11 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
     }
   }
 
+  function handleClick(move: string) {
+    setMoves([...moves, { name: move }])
+    setUsedMoves([...usedMoves, move])
+  }
+
   return (
     <div className="flex flex-col gap-">
       <DndContext onDragEnd={handleDragEnd}>
@@ -59,7 +64,11 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
             disabled={canStartGame() && notMyTurn && !winner}
           />
         </div>
-        <PokemonAvailableMoves moves={availableMoves} pokemonId={pokemonId} />
+        <PokemonAvailableMoves
+          moves={availableMoves}
+          pokemonId={pokemonId}
+          onClick={handleClick}
+        />
       </DndContext>
     </div>
   )

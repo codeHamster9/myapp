@@ -7,11 +7,8 @@ interface SearchBarProps {
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
 }
 
-export default function SearchBar({
-  placeholder,
-  value,
-  onChange,
-}: SearchBarProps) {
+export const SearchBar = (props: SearchBarProps) => {
+  const { placeholder = 'Search', value, onChange } = props
   return (
     <div className="flex-1 relative">
       <Search

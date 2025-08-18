@@ -1,8 +1,7 @@
 import { useAtom } from 'jotai/react'
 
+import { SearchBar } from '@/components/SearchBar'
 import { searchQueryAtom } from '@/store/searchAtoms'
-
-import SearchBar from '../../../components/SearchBar'
 
 export function ExperienceSearchBar() {
   const [searchQuery, setSearchQuery] = useAtom(searchQueryAtom)

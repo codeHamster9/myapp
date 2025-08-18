@@ -1,4 +1,5 @@
-import { highlightText } from '../../../utils/highlightText'
+import { highlightText } from '@/utils/highlightText'
+
 import type { Item } from '../types'
 
 interface ItemCardProps {
