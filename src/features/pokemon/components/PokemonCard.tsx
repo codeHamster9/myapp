@@ -26,6 +26,7 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
   const notMyTurn = currentPlayer !== playerId
   const [moves, setMoves] = useState<{ name: string }[]>([])
   const [usedMoves, setUsedMoves] = useState<string[]>([])
+  const selectMove = useBattleStore((state) => state.selectMove)
 
   if (!pokemon) return null
 
@@ -39,12 +40,14 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
     if (over && active.id !== over.id && moves.length < 6) {
       setMoves([...moves, { name: active.id as string }])
       setUsedMoves([...usedMoves, active.id as string])
+      selectMove(pokemonId, active.id)
     }
   }
 
   function handleClick(move: string) {
     setMoves([...moves, { name: move }])
     setUsedMoves([...usedMoves, move])
+    selectMove(pokemonId, move)
   }
 
   return (
@@ -60,7 +63,7 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
           <HpBar hp={hp} maxHp={pokemon.stats[0].base_stat} />
           <PokemonSelectedMoves
             pokemonId={pokemonId}
-            moves={moves}
+            moves={pokemonData.selectedMoves.map((move) => ({ name: move }))}
             disabled={canStartGame() && notMyTurn && !winner}
           />
         </div>
