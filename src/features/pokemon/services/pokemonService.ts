@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueries } from '@tanstack/react-query'
 
 import type { Pokemon, Move } from '../types/pokemon'
 
@@ -40,5 +40,29 @@ export const useMove = (url: string) => {
       }
       return response.json()
     },
+  })
+}
+
+export const useMoves = (moves: Pokemon['moves'] | undefined) => {
+  return useQueries({
+    queries: moves
+      ? moves.map(({ move }) => ({
+          queryKey: ['move', move.url],
+          queryFn: async () => fetch(move.url).then(async (r) => r.json()),
+          enabled: !!move.url && !!moves,
+          select: (data: Move) => ({
+            ...data,
+            name: move.name,
+            power: data.power || 40,
+            accuracy: data.accuracy || 100,
+          }),
+        }))
+      : [],
+    combine: (results) => ({
+      movesWithData: results
+        .filter((query) => query.isSuccess && query.data)
+        .map((query) => query.data!),
+      isLoading: results.some((r) => r.isLoading),
+    }),
   })
 }

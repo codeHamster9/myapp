@@ -1,10 +1,9 @@
 import { DndContext } from '@dnd-kit/core'
-import { useQueries } from '@tanstack/react-query'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 
 import useBattleStore from '@/store/battleStore'
 
-import { usePokemon } from '../services/pokemonService'
+import { usePokemon, useMoves } from '../services/pokemonService'
 import type { Move } from '../types/pokemon'
 
 import { HpBar } from './HpBar'
@@ -19,9 +18,6 @@ interface Props {
 }
 
 export default function PokemonCard({ pokemonId, playerId }: Props) {
-  const movesOffset = 6
-  const { data: pokemon } = usePokemon(pokemonId)
-
   const [availableMoves, setAvailableMoves] = useState<Move[]>([])
   const [selectedMoves, setSelectedMoves] = useState<Move[]>([])
 
@@ -35,31 +31,8 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
   } = useBattleStore((state) => state)
 
   const player = players[playerId]
-
-  const offeredMoves = useMemo(() => {
-    if (!pokemon?.moves) return []
-    return pokemon.moves.map((m) => ({ name: m.move.name, url: m.move.url }))
-  }, [pokemon?.moves])
-
-  const { movesWithData } = useQueries({
-    queries: offeredMoves.map((move) => ({
-      queryKey: ['move', move.url],
-      queryFn: async () => fetch(move.url).then(async (r) => r.json()),
-      enabled: !!move.url,
-      select: (data: Move) => ({
-        ...data,
-        name: move.name,
-        power: data.power || 40,
-        accuracy: data.accuracy || 100,
-      }),
-    })),
-    combine: (results) => ({
-      movesWithData: results
-        .filter((query) => query.isSuccess && query.data)
-        .map((query) => query.data!),
-      isLoading: results.some((r) => r.isLoading),
-    }),
-  })
+  const { data: pokemon } = usePokemon(pokemonId)
+  const { movesWithData } = useMoves(pokemon?.moves)
 
   useEffect(() => {
     if (movesWithData.length > 0) {
