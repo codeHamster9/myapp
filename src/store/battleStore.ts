@@ -24,7 +24,7 @@ interface BattleActions {
   setPlayerReady: (playerId: number) => void
   setPokemonHp: (playerId: number, hp: number) => void
   setPlayerMoves: (playerId: number, moves: Move[]) => void
-  handleMove: (move: string, playerId: number) => void
+  handleMove: (move: Move, playerId: number) => void
 }
 
 const getRandomPokemonId = () => Math.floor(Math.random() * 151) + 1
@@ -59,21 +59,28 @@ const useBattleStore = create<BattleState & BattleActions>(
       }))
     },
 
-    handleMove: (move: string, playerId: number) => {
+    handleMove: (move: Move, playerId: number) => {
       const { players, isPlayer1Turn, gameLog, setPokemonHp } = get()
       const player = players[playerId]
       const opponent = players[playerId === 1 ? 2 : 1]
 
       if (!player || !opponent) return
 
-      setPokemonHp(playerId === 1 ? 2 : 1, opponent.hp - 10)
-      const log = `${playerId === 1 ? 'Player 1' : 'Player 2'} used ${move}`
+      // Calculate damage based on move power
+      const baseDamage = move.power || 40
+      const randomFactor = Math.random() * 0.4 + 0.8 // 0.8 to 1.2 multiplier
+      const damage = Math.floor(baseDamage * randomFactor)
+      const newHp = Math.max(0, opponent.hp - damage)
+      
+      setPokemonHp(playerId === 1 ? 2 : 1, newHp)
+      const log = `${playerId === 1 ? 'Player 1' : 'Player 2'} used ${move.name} for ${damage} damage!`
 
       set((state) => ({
         ...state,
         gameLog: [...gameLog, log],
         isPlayer1Turn: !isPlayer1Turn,
         currentPlayer: isPlayer1Turn ? 'Player 2' : 'Player 1',
+        winner: newHp <= 0 ? (playerId === 1 ? 'Player 1' : 'Player 2') : state.winner
       }))
     },
 
