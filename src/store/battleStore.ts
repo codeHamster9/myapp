@@ -1,11 +1,12 @@
 import { create } from 'zustand'
 
-import type { Pokemon } from '../features/pokemon/types/pokemon'
+import type { Move } from '@/features/pokemon/types/pokemon'
 
 interface Player {
   id: number
   ready: boolean
   hp: number
+  moves: Move[]
 }
 
 interface BattleState {
@@ -22,6 +23,7 @@ interface BattleActions {
   canStartGame: () => boolean
   setPlayerReady: (playerId: number) => void
   setPokemonHp: (playerId: number, hp: number) => void
+  setPlayerMoves: (playerId: number, moves: Move[]) => void
   handleMove: (move: string, playerId: number) => void
 }
 
@@ -30,8 +32,8 @@ const getRandomPokemonId = () => Math.floor(Math.random() * 151) + 1
 const useBattleStore = create<BattleState & BattleActions>(
   (set, get, store) => ({
     players: {
-      1: { id: getRandomPokemonId(), ready: false, hp: 0 },
-      2: { id: getRandomPokemonId(), ready: false, hp: 0 },
+      1: { id: getRandomPokemonId(), ready: true, hp: 0, moves: [] },
+      2: { id: getRandomPokemonId(), ready: true, hp: 0, moves: [] },
     },
 
     isPlayer1Turn: true,
@@ -87,6 +89,19 @@ const useBattleStore = create<BattleState & BattleActions>(
           [playerId]: {
             ...state.players[playerId],
             ready: true,
+          },
+        },
+      }))
+    },
+
+    setPlayerMoves: (playerId: number, moves: Move[]) => {
+      set((state) => ({
+        ...state,
+        players: {
+          ...state.players,
+          [playerId]: {
+            ...state.players[playerId],
+            moves: moves,
           },
         },
       }))

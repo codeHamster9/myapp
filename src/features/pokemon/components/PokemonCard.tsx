@@ -1,9 +1,11 @@
 import { DndContext } from '@dnd-kit/core'
+import { useQueries } from '@tanstack/react-query'
 import { useState, useEffect, useMemo } from 'react'
 
 import useBattleStore from '@/store/battleStore'
 
 import { usePokemon } from '../services/pokemonService'
+import type { Move } from '../types/pokemon'
 
 import { HpBar } from './HpBar'
 import { PokemonAvailableMoves } from './PokemonAvailableMoves'
@@ -16,22 +18,24 @@ interface Props {
   playerId: number
 }
 
-export type SimpleMove = {
-  name: string
-}
-
 export default function PokemonCard({ pokemonId, playerId }: Props) {
   const { data: pokemon } = usePokemon(pokemonId)
-  const movesOffset = 10
+  const movesOffset = 6
 
-  const [availableMoves, setAvailableMoves] = useState<SimpleMove[]>([])
-  const [selectedMoves, setSelectedMoves] = useState<SimpleMove[]>([])
+  const [availableMoves, setAvailableMoves] = useState<Move[]>([])
+  const [selectedMoves, setSelectedMoves] = useState<Move[]>([])
   const [randomOffset] = useState(() =>
     Math.floor(Math.random() * (pokemon?.moves.length || 100)),
   )
 
-  const { setPlayerReady, winner, canStartGame, setPokemonHp, players } =
-    useBattleStore((state) => state)
+  const {
+    setPlayerReady,
+    winner,
+    canStartGame,
+    setPokemonHp,
+    players,
+    setPlayerMoves,
+  } = useBattleStore((state) => state)
 
   const player = players[playerId]
 
@@ -39,15 +43,36 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
     if (!pokemon?.moves) return []
     return pokemon.moves
       .slice(randomOffset, randomOffset + movesOffset)
-      .map((m) => ({ name: m.move.name }))
+      .map((m) => ({ name: m.move.name, url: m.move.url }))
   }, [pokemon?.moves, randomOffset, movesOffset])
 
+  const { movesWithData, isLoading } = useQueries({
+    queries: offeredMoves.map((move) => ({
+      queryKey: ['move', move.url],
+      queryFn: async () => fetch(move.url).then(async (r) => r.json()),
+      enabled: !!move.url,
+      select: (data: Move) => ({
+        ...data,
+        name: move.name,
+        power: data.power || 40,
+        accuracy: data.accuracy || 100,
+      }),
+    })),
+    combine: (results) => ({
+      movesWithData: results
+        .filter((query) => query.isSuccess && query.data)
+        .map((query) => query.data!),
+      isLoading: results.some((r) => r.isLoading),
+    }),
+  })
+
   useEffect(() => {
-    if (offeredMoves.length > 0) {
-      setAvailableMoves(offeredMoves)
+    if (movesWithData.length > 0) {
+      // setAvailableMoves(movesWithData)
+      setPlayerMoves(playerId, movesWithData)
       setPokemonHp(playerId, pokemon?.stats[0].base_stat || 0)
     }
-  }, [offeredMoves])
+  }, [movesWithData, playerId, pokemon?.stats, setPokemonHp, setPlayerMoves])
 
   // const notMyTurn = currentPlayer !== playerId
 
@@ -57,7 +82,10 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
     const { active, over } = event
 
     if (over && active.id !== over.id && selectedMoves.length < 6) {
-      const newSelectedMoves = [...selectedMoves, { name: active.id }]
+      const draggedMove = availableMoves.find((m) => m.name === active.id)
+      if (!draggedMove) return
+
+      const newSelectedMoves = [...selectedMoves, draggedMove]
       setAvailableMoves([...availableMoves.filter((m) => m.name !== active.id)])
       setSelectedMoves(newSelectedMoves)
 
@@ -68,7 +96,7 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
     }
   }
 
-  function handleClick(move: SimpleMove) {
+  function handleClick(move: Move) {
     if (selectedMoves.length >= 6) return // Prevent selecting more than 6 moves
 
     const newSelectedMoves = [...selectedMoves, move]
@@ -94,16 +122,16 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
           <HpBar hp={player.hp} maxHp={pokemon.stats[0].base_stat} />
           <PokemonSelectedMoves
             pokemonId={pokemonId}
-            moves={selectedMoves}
+            moves={movesWithData}
             playerId={playerId}
             disabled={!canStartGame() && !winner}
           />
         </div>
-        <PokemonAvailableMoves
+        {/* <PokemonAvailableMoves
           moves={availableMoves}
           pokemonId={pokemonId}
           onClick={handleClick}
-        />
+        /> */}
       </DndContext>
     </div>
   )

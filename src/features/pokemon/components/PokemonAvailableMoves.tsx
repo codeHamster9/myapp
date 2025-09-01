@@ -1,11 +1,10 @@
 import { Draggable } from '@/components/Dnd/Draggable'
-
-import type { SimpleMove } from './PokemonCard'
+import type { Move } from '../types/pokemon'
 
 interface MoveButtonsProps {
-  moves: SimpleMove[]
+  moves: Move[]
   pokemonId: number
-  onClick: (move: SimpleMove) => void
+  onClick: (move: Move) => void
 }
 
 export function PokemonAvailableMoves({
