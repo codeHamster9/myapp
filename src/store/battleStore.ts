@@ -2,18 +2,14 @@ import { create } from 'zustand'
 
 import type { Pokemon } from '../features/pokemon/types/pokemon'
 
-interface PokemonPlayer {
-  pokemon: Pokemon | null
-  hp: number
+interface Player {
   id: number
-  selectedMoves: string[]
-  offeredMoves: string[]
+  ready: boolean
+  hp: number
 }
 
 interface BattleState {
-  pokemons: Record<number, PokemonPlayer>
-  player1Id: number
-  player2Id: number
+  players: Record<number, Player>
   isPlayer1Turn: boolean
   gameLog: string[]
   winner: string | null
@@ -22,21 +18,22 @@ interface BattleState {
 
 interface BattleActions {
   initGame: () => void
-  handleMove: (moveName: string, pokemonId: number) => void
-  updatePokemon: (pokemon: Pokemon, hp?: number) => void
-  selectMove: (pokemonId: number, moveName: string) => void
   isPlayerReady: (pokemonId: number) => boolean
   canStartGame: () => boolean
+  setPlayerReady: (playerId: number) => void
+  setPokemonHp: (playerId: number, hp: number) => void
+  handleMove: (move: string, playerId: number) => void
 }
 
 const getRandomPokemonId = () => Math.floor(Math.random() * 151) + 1
 
 const useBattleStore = create<BattleState & BattleActions>(
   (set, get, store) => ({
-    // Initial state
-    pokemons: {},
-    player1Id: getRandomPokemonId(),
-    player2Id: getRandomPokemonId(),
+    players: {
+      1: { id: getRandomPokemonId(), ready: false, hp: 0 },
+      2: { id: getRandomPokemonId(), ready: false, hp: 0 },
+    },
+
     isPlayer1Turn: true,
     gameLog: [],
     winner: null,
@@ -47,81 +44,57 @@ const useBattleStore = create<BattleState & BattleActions>(
       set(store.getInitialState())
     },
 
-    handleMove: (moveName: string, pokemonId: number) => {
-      const { winner, pokemons, isPlayer1Turn, currentPlayer } = get()
-      if (winner) return
-
-      const targetPokemon = pokemons[pokemonId]
-      if (!targetPokemon) return
-
-      const damage = Math.floor(Math.random() * 50) + 10
-      const newHP = Math.max(0, targetPokemon.hp - damage)
-
+    setPokemonHp: (playerId: number, hp: number) => {
       set((state) => ({
-        pokemons: {
-          ...state.pokemons,
-          [pokemonId]: { ...targetPokemon, hp: newHP },
-        },
-        gameLog: [
-          ...state.gameLog,
-          `${currentPlayer} used ${moveName} for ${damage} damage!`,
-        ],
-        winner: newHP <= 0 ? currentPlayer : null,
-        isPlayer1Turn: newHP <= 0 ? isPlayer1Turn : !isPlayer1Turn,
-        currentPlayer:
-          newHP <= 0 ? currentPlayer : isPlayer1Turn ? 'Player 2' : 'Player 1',
-      }))
-
-      if (newHP <= 0) {
-        set((state) => ({
-          gameLog: [...state.gameLog, `${currentPlayer} wins the battle!`],
-        }))
-      }
-    },
-
-    updatePokemon: (pokemon: Pokemon, hp?: number) => {
-      set((state) => ({
-        pokemons: {
-          ...state.pokemons,
-          [pokemon.id]: {
-            pokemon,
-            hp: hp || pokemon.stats[0].base_stat,
-            id: pokemon.id,
-            selectedMoves: [],
-            offeredMoves: pokemon?.moves.slice(0, 10).map((m) => m.move.name),
+        ...state,
+        players: {
+          ...state.players,
+          [playerId]: {
+            ...state.players[playerId],
+            hp: hp,
           },
         },
       }))
     },
 
-    selectMove: (pokemonId: number, moveName: string) => {
-      set((state) => {
-        const pokemon = state.pokemons[pokemonId]
-        if (!pokemon || pokemon.selectedMoves.length >= 6) return state
+    handleMove: (move: string, playerId: number) => {
+      const { players, isPlayer1Turn, gameLog, setPokemonHp } = get()
+      const player = players[playerId]
+      const opponent = players[playerId === 1 ? 2 : 1]
 
-        return {
-          pokemons: {
-            ...state.pokemons,
-            [pokemonId]: {
-              ...pokemon,
-              selectedMoves: [...pokemon.selectedMoves, moveName],
-            },
-          },
-        }
-      })
+      if (!player || !opponent) return
+
+      setPokemonHp(playerId === 1 ? 2 : 1, opponent.hp - 10)
+      const log = `${playerId === 1 ? 'Player 1' : 'Player 2'} used ${move}`
+
+      set((state) => ({
+        ...state,
+        gameLog: [...gameLog, log],
+        isPlayer1Turn: !isPlayer1Turn,
+        currentPlayer: isPlayer1Turn ? 'Player 2' : 'Player 1',
+      }))
     },
 
-    isPlayerReady: (pokemonId: number) => {
-      const pokemon = get().pokemons[pokemonId]
-      return pokemon?.selectedMoves.length === 6
+    isPlayerReady: (playerId: number) => {
+      const player = get().players[playerId]
+      return player.ready
+    },
+    setPlayerReady: (playerId: number) => {
+      set((state) => ({
+        ...state,
+        players: {
+          ...state.players,
+          [playerId]: {
+            ...state.players[playerId],
+            ready: true,
+          },
+        },
+      }))
     },
 
     canStartGame: () => {
-      const { pokemons, player1Id, player2Id } = get()
-      return (
-        pokemons[player1Id]?.selectedMoves.length === 6 &&
-        pokemons[player2Id]?.selectedMoves.length === 6
-      )
+      const { players } = get()
+      return players[1].ready && players[2].ready
     },
   }),
 )

@@ -1,7 +1,9 @@
 import { DndContext } from '@dnd-kit/core'
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 
 import useBattleStore from '@/store/battleStore'
+
+import { usePokemon } from '../services/pokemonService'
 
 import { HpBar } from './HpBar'
 import { PokemonAvailableMoves } from './PokemonAvailableMoves'
@@ -11,43 +13,72 @@ import { PokemonSelectedMoves } from './PokemonSelectedMoves'
 
 interface Props {
   pokemonId: number
-  playerId: string
+  playerId: number
+}
+
+export type SimpleMove = {
+  name: string
 }
 
 export default function PokemonCard({ pokemonId, playerId }: Props) {
-  const pokemonData = useBattleStore((state) => state.pokemons[pokemonId])
-  const pokemon = pokemonData?.pokemon
-  const offeredMoves = pokemonData?.offeredMoves || []
-  const hp = useBattleStore((state) => state.pokemons[pokemonId]?.hp || 0)
-  const { currentPlayer, winner, canStartGame } = useBattleStore(
-    (state) => state,
+  const { data: pokemon } = usePokemon(pokemonId)
+  const movesOffset = 10
+
+  const [availableMoves, setAvailableMoves] = useState<SimpleMove[]>([])
+  const [selectedMoves, setSelectedMoves] = useState<SimpleMove[]>([])
+  const [randomOffset] = useState(() =>
+    Math.floor(Math.random() * (pokemon?.moves.length || 100)),
   )
 
-  const notMyTurn = currentPlayer !== playerId
-  const [moves, setMoves] = useState<{ name: string }[]>([])
-  const [usedMoves, setUsedMoves] = useState<string[]>([])
-  const selectMove = useBattleStore((state) => state.selectMove)
+  const { setPlayerReady, winner, canStartGame, setPokemonHp, players } =
+    useBattleStore((state) => state)
+
+  const player = players[playerId]
+
+  const offeredMoves = useMemo(() => {
+    if (!pokemon?.moves) return []
+    return pokemon.moves
+      .slice(randomOffset, randomOffset + movesOffset)
+      .map((m) => ({ name: m.move.name }))
+  }, [pokemon?.moves, randomOffset, movesOffset])
+
+  useEffect(() => {
+    if (offeredMoves.length > 0) {
+      setAvailableMoves(offeredMoves)
+      setPokemonHp(playerId, pokemon?.stats[0].base_stat || 0)
+    }
+  }, [offeredMoves])
+
+  // const notMyTurn = currentPlayer !== playerId
 
   if (!pokemon) return null
-
-  const availableMoves = offeredMoves.filter(
-    (move) => !usedMoves.includes(move),
-  )
 
   function handleDragEnd(event: any) {
     const { active, over } = event
 
-    if (over && active.id !== over.id && moves.length < 6) {
-      setMoves([...moves, { name: active.id as string }])
-      setUsedMoves([...usedMoves, active.id as string])
-      selectMove(pokemonId, active.id)
+    if (over && active.id !== over.id && selectedMoves.length < 6) {
+      const newSelectedMoves = [...selectedMoves, { name: active.id }]
+      setAvailableMoves([...availableMoves.filter((m) => m.name !== active.id)])
+      setSelectedMoves(newSelectedMoves)
+
+      // Set player ready when they reach exactly 6 moves
+      if (newSelectedMoves.length === 6) {
+        setPlayerReady(playerId)
+      }
     }
   }
 
-  function handleClick(move: string) {
-    setMoves([...moves, { name: move }])
-    setUsedMoves([...usedMoves, move])
-    selectMove(pokemonId, move)
+  function handleClick(move: SimpleMove) {
+    if (selectedMoves.length >= 6) return // Prevent selecting more than 6 moves
+
+    const newSelectedMoves = [...selectedMoves, move]
+    setAvailableMoves([...availableMoves.filter((m) => m.name !== move.name)])
+    setSelectedMoves(newSelectedMoves)
+
+    // Set player ready when they reach exactly 6 moves
+    if (newSelectedMoves.length === 6) {
+      setPlayerReady(playerId)
+    }
   }
 
   return (
@@ -60,11 +91,12 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
             alt={pokemon.name}
           />
           <PokemonName name={pokemon.name} />
-          <HpBar hp={hp} maxHp={pokemon.stats[0].base_stat} />
+          <HpBar hp={player.hp} maxHp={pokemon.stats[0].base_stat} />
           <PokemonSelectedMoves
             pokemonId={pokemonId}
-            moves={pokemonData.selectedMoves.map((move) => ({ name: move }))}
-            disabled={canStartGame() && notMyTurn && !winner}
+            moves={selectedMoves}
+            playerId={playerId}
+            disabled={!canStartGame() && !winner}
           />
         </div>
         <PokemonAvailableMoves
