@@ -19,14 +19,11 @@ interface Props {
 }
 
 export default function PokemonCard({ pokemonId, playerId }: Props) {
-  const { data: pokemon } = usePokemon(pokemonId)
   const movesOffset = 6
+  const { data: pokemon } = usePokemon(pokemonId)
 
   const [availableMoves, setAvailableMoves] = useState<Move[]>([])
   const [selectedMoves, setSelectedMoves] = useState<Move[]>([])
-  const [randomOffset] = useState(() =>
-    Math.floor(Math.random() * (pokemon?.moves.length || 100)),
-  )
 
   const {
     setPlayerReady,
@@ -41,12 +38,10 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
 
   const offeredMoves = useMemo(() => {
     if (!pokemon?.moves) return []
-    return pokemon.moves
-      .slice(randomOffset, randomOffset + movesOffset)
-      .map((m) => ({ name: m.move.name, url: m.move.url }))
-  }, [pokemon?.moves, randomOffset, movesOffset])
+    return pokemon.moves.map((m) => ({ name: m.move.name, url: m.move.url }))
+  }, [pokemon?.moves])
 
-  const { movesWithData, isLoading } = useQueries({
+  const { movesWithData } = useQueries({
     queries: offeredMoves.map((move) => ({
       queryKey: ['move', move.url],
       queryFn: async () => fetch(move.url).then(async (r) => r.json()),

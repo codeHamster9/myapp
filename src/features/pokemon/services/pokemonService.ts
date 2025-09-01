@@ -23,6 +23,10 @@ export const usePokemon = (id: number) => {
       }
       return response.json()
     },
+    select: (data: Pokemon) => ({
+      ...data,
+      moves: data.moves.slice(0, 6),
+    }),
   })
 }
 

@@ -71,7 +71,7 @@ const useBattleStore = create<BattleState & BattleActions>(
       const randomFactor = Math.random() * 0.4 + 0.8 // 0.8 to 1.2 multiplier
       const damage = Math.floor(baseDamage * randomFactor)
       const newHp = Math.max(0, opponent.hp - damage)
-      
+
       setPokemonHp(playerId === 1 ? 2 : 1, newHp)
       const log = `${playerId === 1 ? 'Player 1' : 'Player 2'} used ${move.name} for ${damage} damage!`
 
@@ -80,7 +80,12 @@ const useBattleStore = create<BattleState & BattleActions>(
         gameLog: [...gameLog, log],
         isPlayer1Turn: !isPlayer1Turn,
         currentPlayer: isPlayer1Turn ? 'Player 2' : 'Player 1',
-        winner: newHp <= 0 ? (playerId === 1 ? 'Player 1' : 'Player 2') : state.winner
+        winner:
+          newHp <= 0
+            ? playerId === 1
+              ? 'Player 1'
+              : 'Player 2'
+            : state.winner,
       }))
     },
 
