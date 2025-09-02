@@ -7,7 +7,7 @@ import BattleLog from '../features/pokemon/components/BattleLog'
 import PokemonCard from '../features/pokemon/components/PokemonCard'
 
 export default function PokemonPage() {
-  const { players, initGame } = useBattleStore((state) => state)
+  const { initGame } = useBattleStore((state) => state)
 
   useEffect(() => {
     return () => {
@@ -20,8 +20,8 @@ export default function PokemonPage() {
       <PlayersBanner />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <PokemonCard pokemonId={players[1].id} playerId={1} />
-        <PokemonCard pokemonId={players[2].id} playerId={2} />
+        <PokemonCard playerId={1} />
+        <PokemonCard playerId={2} />
       </div>
 
       <BattleLog />

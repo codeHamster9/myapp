@@ -13,11 +13,10 @@ import { PokemonName } from './PokemonName'
 import { PokemonSelectedMoves } from './PokemonSelectedMoves'
 
 interface Props {
-  pokemonId: number
   playerId: number
 }
 
-export default function PokemonCard({ pokemonId, playerId }: Props) {
+export default function PokemonCard({ playerId }: Props) {
   const updatePlayer = useBattleStore((state) => state.updatePlayer)
   const winner = useBattleStore((state) => state.winner)
   const canStartGame = useBattleStore((state) => state.canStartGame)
@@ -25,7 +24,7 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
   const currentPlayer = useBattleStore((state) => state.currentPlayer)
 
   const player = players[playerId]
-  const { data: pokemon } = usePokemon(pokemonId)
+  const { data: pokemon } = usePokemon(player.id)
   const { movesWithData } = useMoves(pokemon?.moves)
   const [availableMoves, setAvailableMoves] = useState<Move[]>([])
 
@@ -42,8 +41,6 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
 
   function handleDragEnd(event: any) {
     const { active, over } = event
-
-    console.log(event)
 
     if (over && active.id !== over.id && player.moves.length < 6) {
       const draggedMove = availableMoves.find((m) => m.name === active.id)
@@ -93,7 +90,7 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
           <PokemonName name={pokemon.name} />
           <HpBar hp={player.hp} maxHp={pokemon.stats[0].base_stat} />
           <PokemonSelectedMoves
-            pokemonId={pokemonId}
+            pokemonId={player.id}
             moves={player.moves}
             playerId={playerId}
             disabled={currentPlayer !== playerId && !canStartGame() && !winner}
@@ -102,7 +99,7 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
         {availableMoves.length ? (
           <PokemonAvailableMoves
             moves={availableMoves}
-            pokemonId={pokemonId}
+            pokemonId={player.id}
             onClick={handleClick}
           />
         ) : null}
