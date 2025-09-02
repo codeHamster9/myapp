@@ -18,29 +18,26 @@ interface Props {
 }
 
 export default function PokemonCard({ pokemonId, playerId }: Props) {
-  const [availableMoves, setAvailableMoves] = useState<Move[]>([])
-  const [selectedMoves, setSelectedMoves] = useState<Move[]>([])
-
-  const {
-    setPlayerReady,
-    winner,
-    canStartGame,
-    setPokemonHp,
-    players,
-    setPlayerMoves,
-  } = useBattleStore((state) => state)
+  const { updatePlayer, winner, canStartGame, players } = useBattleStore(
+    (state) => state,
+  )
 
   const player = players[playerId]
   const { data: pokemon } = usePokemon(pokemonId)
   const { movesWithData } = useMoves(pokemon?.moves)
+  const [availableMoves, setAvailableMoves] = useState<Move[]>(
+    movesWithData || [],
+  )
+  const [selectedMoves, setSelectedMoves] = useState<Move[]>([])
 
   useEffect(() => {
     if (movesWithData.length > 0) {
-      // setAvailableMoves(movesWithData)
-      setPlayerMoves(playerId, movesWithData)
-      setPokemonHp(playerId, pokemon?.stats[0].base_stat || 0)
+      updatePlayer(playerId, {
+        moves: movesWithData,
+        hp: pokemon?.stats[0].base_stat || 0,
+      })
     }
-  }, [movesWithData, playerId, pokemon?.stats, setPokemonHp, setPlayerMoves])
+  }, [movesWithData, playerId, pokemon?.stats, updatePlayer])
 
   // const notMyTurn = currentPlayer !== playerId
 
@@ -59,7 +56,7 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
 
       // Set player ready when they reach exactly 6 moves
       if (newSelectedMoves.length === 6) {
-        setPlayerReady(playerId)
+        updatePlayer(playerId, { ready: true })
       }
     }
   }
@@ -73,7 +70,7 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
 
     // Set player ready when they reach exactly 6 moves
     if (newSelectedMoves.length === 6) {
-      setPlayerReady(playerId)
+      updatePlayer(playerId, { ready: true })
     }
   }
 
@@ -90,16 +87,16 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
           <HpBar hp={player.hp} maxHp={pokemon.stats[0].base_stat} />
           <PokemonSelectedMoves
             pokemonId={pokemonId}
-            moves={movesWithData}
+            moves={player.moves || []}
             playerId={playerId}
             disabled={!canStartGame() && !winner}
           />
         </div>
-        {/* <PokemonAvailableMoves
+        <PokemonAvailableMoves
           moves={availableMoves}
           pokemonId={pokemonId}
           onClick={handleClick}
-        /> */}
+        />
       </DndContext>
     </div>
   )

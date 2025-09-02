@@ -21,9 +21,7 @@ interface BattleActions {
   initGame: () => void
   isPlayerReady: (pokemonId: number) => boolean
   canStartGame: () => boolean
-  setPlayerReady: (playerId: number) => void
-  setPokemonHp: (playerId: number, hp: number) => void
-  setPlayerMoves: (playerId: number, moves: Move[]) => void
+  updatePlayer: (playerId: number, updates: Partial<Omit<Player, 'id'>>) => void
   handleMove: (move: Move, playerId: number) => void
 }
 
@@ -46,21 +44,21 @@ const useBattleStore = create<BattleState & BattleActions>(
       set(store.getInitialState())
     },
 
-    setPokemonHp: (playerId: number, hp: number) => {
+    updatePlayer: (playerId: number, updates: Partial<Omit<Player, 'id'>>) => {
       set((state) => ({
         ...state,
         players: {
           ...state.players,
           [playerId]: {
             ...state.players[playerId],
-            hp: hp,
+            ...updates,
           },
         },
       }))
     },
 
     handleMove: (move: Move, playerId: number) => {
-      const { players, isPlayer1Turn, gameLog, setPokemonHp } = get()
+      const { players, isPlayer1Turn, gameLog } = get()
       const player = players[playerId]
       const opponent = players[playerId === 1 ? 2 : 1]
 
@@ -72,7 +70,7 @@ const useBattleStore = create<BattleState & BattleActions>(
       const damage = Math.floor(baseDamage * randomFactor)
       const newHp = Math.max(0, opponent.hp - damage)
 
-      setPokemonHp(playerId === 1 ? 2 : 1, newHp)
+      get().updatePlayer(playerId === 1 ? 2 : 1, { hp: newHp })
       const log = `${playerId === 1 ? 'Player 1' : 'Player 2'} used ${move.name} for ${damage} damage!`
 
       set((state) => ({
@@ -92,31 +90,6 @@ const useBattleStore = create<BattleState & BattleActions>(
     isPlayerReady: (playerId: number) => {
       const player = get().players[playerId]
       return player.ready
-    },
-    setPlayerReady: (playerId: number) => {
-      set((state) => ({
-        ...state,
-        players: {
-          ...state.players,
-          [playerId]: {
-            ...state.players[playerId],
-            ready: true,
-          },
-        },
-      }))
-    },
-
-    setPlayerMoves: (playerId: number, moves: Move[]) => {
-      set((state) => ({
-        ...state,
-        players: {
-          ...state.players,
-          [playerId]: {
-            ...state.players[playerId],
-            moves: moves,
-          },
-        },
-      }))
     },
 
     canStartGame: () => {
