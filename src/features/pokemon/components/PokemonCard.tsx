@@ -78,7 +78,14 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
     <div className="flex flex-col gap-">
       <DndContext onDragEnd={handleDragEnd}>
         <div className={`border rounded-lg bg-white shadow-md p-4`}>
-          <h2 className="text-amber-500">{playerId}</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-amber-500">{playerId}</h2>
+            <span className={`px-2 py-1 rounded text-sm font-medium ${
+              player.ready ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+            }`}>
+              {player.ready ? 'Ready' : 'Selecting moves...'}
+            </span>
+          </div>
           <PokemonImage
             src={pokemon.sprites.front_default}
             alt={pokemon.name}
