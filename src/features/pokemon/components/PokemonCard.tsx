@@ -5,6 +5,7 @@ import useBattleStore from '@/store/battleStore'
 
 import { usePokemon, useMoves } from '../services/pokemonService'
 import type { Move } from '../types/pokemon'
+import { Skeleton } from '@/components/ui/skeleton'
 
 import { HpBar } from './HpBar'
 import { PokemonAvailableMoves } from './PokemonAvailableMoves'
@@ -24,9 +25,11 @@ export default function PokemonCard({ playerId }: Props) {
   const currentPlayer = useBattleStore((state) => state.currentPlayer)
 
   const player = players[playerId]
-  const { data: pokemon } = usePokemon(player.id)
-  const { movesWithData } = useMoves(pokemon?.moves)
+  const { data: pokemon, isLoading: pokemonLoading } = usePokemon(player.id)
+  const { movesWithData, isLoading: movesLoading } = useMoves(pokemon?.moves)
   const [availableMoves, setAvailableMoves] = useState<Move[]>([])
+  
+  const isLoading = pokemonLoading || movesLoading
 
   useEffect(() => {
     if (movesWithData.length === 10) {
@@ -37,6 +40,27 @@ export default function PokemonCard({ playerId }: Props) {
     }
   }, [movesWithData, playerId, pokemon?.stats, updatePlayer])
 
+  if (isLoading) {
+    return (
+      <div className="border rounded-lg bg-white shadow-md p-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-amber-500">Player {playerId}</h2>
+          <span className="px-2 py-1 rounded text-sm font-medium bg-blue-100 text-blue-800">
+            Loading...
+          </span>
+        </div>
+        <Skeleton className="w-32 h-32 mx-auto" />
+        <Skeleton className="h-6 mt-2" />
+        <Skeleton className="h-4 mt-2" />
+        <div className="mt-4 grid grid-cols-2 gap-2 gap-y-1 min-h-32">
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="h-9" />
+          ))}
+        </div>
+      </div>
+    )
+  }
+  
   if (!pokemon) return null
 
   function handleDragEnd(event: any) {

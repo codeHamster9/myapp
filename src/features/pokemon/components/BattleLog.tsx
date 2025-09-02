@@ -15,7 +15,7 @@ export default function BattleLog() {
   return (
     <div
       ref={logContainerRef}
-      className="mt-8 border p-4 rounded-lg bg-white shadow-inner h-48 overflow-y-auto scroll-smooth"
+      className="mt-8 border p-4 rounded-lg bg-white shadow-inner max-h-64 min-h-32 overflow-y-auto scroll-smooth"
     >
       <h3 className="font-semibold mb-2 text-gray-700">Battle Log</h3>
       {logs.map((log, i) => (

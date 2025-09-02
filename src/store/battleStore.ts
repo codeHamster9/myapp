@@ -29,22 +29,37 @@ interface BattleActions {
 
 const getRandomPokemonId = () => Math.floor(Math.random() * 151) + 1
 
+const initialState = {
+  players: {
+    1: { id: getRandomPokemonId(), ready: false, hp: 0, moves: [] },
+    2: { id: getRandomPokemonId(), ready: false, hp: 0, moves: [] },
+  },
+  isPlayer1Turn: true,
+  gameLog: [],
+  winner: null,
+  currentPlayer: 1,
+}
+
 const useBattleStore = create<BattleState & BattleActions>()(
   devtools(
-    immer((set, get, store) => ({
-      players: {
-        1: { id: getRandomPokemonId(), ready: false, hp: 0, moves: [] },
-        2: { id: getRandomPokemonId(), ready: false, hp: 0, moves: [] },
-      },
-
-      isPlayer1Turn: true,
-      gameLog: [],
-      winner: null,
-      currentPlayer: 1,
-
+    immer((set, get) => ({
+      ...initialState,
       // Actions
       initGame: () => {
-        set(store.getInitialState())
+        set((state) => {
+          state.players[1].id = getRandomPokemonId()
+          state.players[2].id = getRandomPokemonId()
+          state.players[1].ready = false
+          state.players[2].ready = false
+          state.players[1].hp = 0
+          state.players[2].hp = 0
+          state.players[1].moves = []
+          state.players[2].moves = []
+          state.isPlayer1Turn = true
+          state.gameLog = []
+          state.winner = null
+          state.currentPlayer = 1
+        })
       },
 
       updatePlayer: (
@@ -63,10 +78,9 @@ const useBattleStore = create<BattleState & BattleActions>()(
 
         if (!player || !opponent) return
 
-        // Calculate damage based on move power
-        const baseDamage = move.power || 40
-        const randomFactor = Math.random() * 0.4 + 0.8 // 0.8 to 1.2 multiplier
-        const damage = Math.floor(baseDamage * randomFactor)
+        // Calculate damage between 0 and maxDamage (move power)
+        const maxDamage = move.power || 40
+        const damage = Math.floor(Math.random() * maxDamage)
         const newHp = Math.max(0, opponent.hp - damage)
 
         set((state) => {
