@@ -18,58 +18,54 @@ interface Props {
 }
 
 export default function PokemonCard({ pokemonId, playerId }: Props) {
-  const { updatePlayer, winner, canStartGame, players } = useBattleStore(
-    (state) => state,
-  )
+  const updatePlayer = useBattleStore((state) => state.updatePlayer)
+  const winner = useBattleStore((state) => state.winner)
+  const canStartGame = useBattleStore((state) => state.canStartGame)
+  const players = useBattleStore((state) => state.players)
+  const currentPlayer = useBattleStore((state) => state.currentPlayer)
 
   const player = players[playerId]
   const { data: pokemon } = usePokemon(pokemonId)
   const { movesWithData } = useMoves(pokemon?.moves)
-  const [availableMoves, setAvailableMoves] = useState<Move[]>(
-    movesWithData || [],
-  )
-  const [selectedMoves, setSelectedMoves] = useState<Move[]>([])
+  const [availableMoves, setAvailableMoves] = useState<Move[]>([])
 
   useEffect(() => {
-    if (movesWithData.length > 0) {
+    if (movesWithData.length === 10) {
+      setAvailableMoves(movesWithData)
       updatePlayer(playerId, {
-        moves: movesWithData,
         hp: pokemon?.stats[0].base_stat || 0,
       })
     }
   }, [movesWithData, playerId, pokemon?.stats, updatePlayer])
-
-  // const notMyTurn = currentPlayer !== playerId
 
   if (!pokemon) return null
 
   function handleDragEnd(event: any) {
     const { active, over } = event
 
-    if (over && active.id !== over.id && selectedMoves.length < 6) {
+    console.log(event)
+
+    if (over && active.id !== over.id && player.moves.length < 6) {
       const draggedMove = availableMoves.find((m) => m.name === active.id)
       if (!draggedMove) return
 
-      const newSelectedMoves = [...selectedMoves, draggedMove]
       setAvailableMoves([...availableMoves.filter((m) => m.name !== active.id)])
-      setSelectedMoves(newSelectedMoves)
+      updatePlayer(playerId, { moves: [...player.moves, draggedMove] })
 
-      // Set player ready when they reach exactly 6 moves
-      if (newSelectedMoves.length === 6) {
+      if (player.moves.length === 6) {
         updatePlayer(playerId, { ready: true })
       }
     }
   }
 
   function handleClick(move: Move) {
-    if (selectedMoves.length >= 6) return // Prevent selecting more than 6 moves
+    if (player.moves.length >= 6) return
 
-    const newSelectedMoves = [...selectedMoves, move]
+    const moves = [...player.moves, move]
     setAvailableMoves([...availableMoves.filter((m) => m.name !== move.name)])
-    setSelectedMoves(newSelectedMoves)
+    updatePlayer(playerId, { moves })
 
-    // Set player ready when they reach exactly 6 moves
-    if (newSelectedMoves.length === 6) {
+    if (moves.length === 6) {
       updatePlayer(playerId, { ready: true })
     }
   }
@@ -80,9 +76,13 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
         <div className={`border rounded-lg bg-white shadow-md p-4`}>
           <div className="flex items-center justify-between">
             <h2 className="text-amber-500">{playerId}</h2>
-            <span className={`px-2 py-1 rounded text-sm font-medium ${
-              player.ready ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-            }`}>
+            <span
+              className={`px-2 py-1 rounded text-sm font-medium ${
+                player.ready
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-yellow-100 text-yellow-800'
+              }`}
+            >
               {player.ready ? 'Ready' : 'Selecting moves...'}
             </span>
           </div>
@@ -94,16 +94,18 @@ export default function PokemonCard({ pokemonId, playerId }: Props) {
           <HpBar hp={player.hp} maxHp={pokemon.stats[0].base_stat} />
           <PokemonSelectedMoves
             pokemonId={pokemonId}
-            moves={player.moves || []}
+            moves={player.moves}
             playerId={playerId}
-            disabled={!canStartGame() && !winner}
+            disabled={currentPlayer !== playerId && !canStartGame() && !winner}
           />
         </div>
-        <PokemonAvailableMoves
-          moves={availableMoves}
-          pokemonId={pokemonId}
-          onClick={handleClick}
-        />
+        {availableMoves.length ? (
+          <PokemonAvailableMoves
+            moves={availableMoves}
+            pokemonId={pokemonId}
+            onClick={handleClick}
+          />
+        ) : null}
       </DndContext>
     </div>
   )

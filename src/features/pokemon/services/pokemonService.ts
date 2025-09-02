@@ -25,21 +25,8 @@ export const usePokemon = (id: number) => {
     },
     select: (data: Pokemon) => ({
       ...data,
-      moves: data.moves.slice(0, 6),
+      moves: data.moves.slice(0, 10),
     }),
-  })
-}
-
-export const useMove = (url: string) => {
-  return useQuery({
-    queryKey: pokemonKeys.move(url),
-    queryFn: async (): Promise<Move> => {
-      const response = await fetch(url)
-      if (!response.ok) {
-        throw new Error('Network response was not ok')
-      }
-      return response.json()
-    },
   })
 }
 

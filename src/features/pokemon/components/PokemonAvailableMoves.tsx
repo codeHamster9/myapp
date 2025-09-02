@@ -1,4 +1,5 @@
 import { Draggable } from '@/components/Dnd/Draggable'
+
 import type { Move } from '../types/pokemon'
 
 interface MoveButtonsProps {
@@ -22,7 +23,7 @@ export function PokemonAvailableMoves({
             disabled={false}
             onDoubleClick={() => onClick(move)}
           >
-            {move.name}
+            {move.name} ({move.power})
           </button>
         </Draggable>
       ))}
