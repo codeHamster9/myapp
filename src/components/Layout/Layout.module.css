@@ -1,5 +1,5 @@
 .layout {
-  min-height: 100vh;
+  height: 100%;
   min-width: 100vw;
   /* background-color: #282c34; */
   /* font-size: calc(10px + 2vmin); */
@@ -8,8 +8,8 @@
 }
 
 .container {
-  min-height: 100vh;
-  height: 100vh;
+  overflow-y: auto;
+  height: 100%;
   min-width: 90%;
   max-width: 90%;
   display: flex;
