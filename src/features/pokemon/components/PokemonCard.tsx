@@ -124,7 +124,7 @@ function PokemonCard({ playerId }: Props) {
             pokemonId={player.id}
             moves={player.moves}
             playerId={playerId}
-            disabled={currentPlayer !== playerId && !canStartGame && !winner}
+            disabled={currentPlayer !== playerId || !canStartGame || !!winner}
           />
         </div>
         {availableMoves.length ? (
