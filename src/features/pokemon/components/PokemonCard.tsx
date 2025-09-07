@@ -1,6 +1,7 @@
 import { DndContext } from '@dnd-kit/core'
 import { useState, useEffect, memo } from 'react'
 
+import ElectricBorder from '@/components/ElectricBorder'
 import { Skeleton } from '@/components/ui/skeleton'
 import useBattleStore from '@/store/battleStore'
 
@@ -99,43 +100,51 @@ function PokemonCard({ playerId }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-">
-      <DndContext onDragEnd={handleDragEnd}>
-        <div className={`border rounded-lg bg-white shadow-md p-4`}>
-          <div className="flex items-center justify-between">
-            <h2 className="text-amber-500">{playerId}</h2>
-            <span
-              className={`px-2 py-1 rounded text-sm font-medium ${
-                player.ready
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-yellow-100 text-yellow-800'
-              }`}
-            >
-              {player.ready ? 'Ready' : 'Selecting moves...'}
-            </span>
+    <ElectricBorder
+      color="#7df9ff"
+      speed={1}
+      chaos={0.5}
+      thickness={2}
+      style={{ borderRadius: 16 }}
+    >
+      <div className="flex flex-col gap-">
+        <DndContext onDragEnd={handleDragEnd}>
+          <div className={`border rounded-lg bg-white shadow-md p-4`}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-amber-500">{playerId}</h2>
+              <span
+                className={`px-2 py-1 rounded text-sm font-medium ${
+                  player.ready
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}
+              >
+                {player.ready ? 'Ready' : 'Selecting moves...'}
+              </span>
+            </div>
+            <PokemonImage
+              src={pokemon.sprites.front_default}
+              alt={pokemon.name}
+            />
+            <PokemonName name={pokemon.name} />
+            <HpBar hp={player.hp} maxHp={pokemon.stats[0].base_stat} />
+            <PokemonSelectedMoves
+              pokemonId={player.id}
+              moves={player.moves}
+              playerId={playerId}
+              disabled={currentPlayer !== playerId || !canStartGame || !!winner}
+            />
           </div>
-          <PokemonImage
-            src={pokemon.sprites.front_default}
-            alt={pokemon.name}
-          />
-          <PokemonName name={pokemon.name} />
-          <HpBar hp={player.hp} maxHp={pokemon.stats[0].base_stat} />
-          <PokemonSelectedMoves
-            pokemonId={player.id}
-            moves={player.moves}
-            playerId={playerId}
-            disabled={currentPlayer !== playerId || !canStartGame || !!winner}
-          />
-        </div>
-        {availableMoves.length ? (
-          <PokemonAvailableMoves
-            moves={availableMoves}
-            pokemonId={player.id}
-            onClick={handleClick}
-          />
-        ) : null}
-      </DndContext>
-    </div>
+          {availableMoves.length ? (
+            <PokemonAvailableMoves
+              moves={availableMoves}
+              pokemonId={player.id}
+              onClick={handleClick}
+            />
+          ) : null}
+        </DndContext>
+      </div>
+    </ElectricBorder>
   )
 }
 

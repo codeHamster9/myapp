@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
 
+import Galaxy from '@/components/Galaxy'
 import useBattleStore from '@/store/battleStore'
 
 import { PlayersBanner } from '../components/PlayersBanner'
