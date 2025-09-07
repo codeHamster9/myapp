@@ -1,11 +1,11 @@
 import { DndContext } from '@dnd-kit/core'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 
+import { Skeleton } from '@/components/ui/skeleton'
 import useBattleStore from '@/store/battleStore'
 
 import { usePokemon, useMoves } from '../services/pokemonService'
 import type { Move } from '../types/pokemon'
-import { Skeleton } from '@/components/ui/skeleton'
 
 import { HpBar } from './HpBar'
 import { PokemonAvailableMoves } from './PokemonAvailableMoves'
@@ -17,28 +17,35 @@ interface Props {
   playerId: number
 }
 
-export default function PokemonCard({ playerId }: Props) {
-  const updatePlayer = useBattleStore((state) => state.updatePlayer)
+function PokemonCard({ playerId }: Props) {
   const winner = useBattleStore((state) => state.winner)
-  const canStartGame = useBattleStore((state) => state.canStartGame)
-  const players = useBattleStore((state) => state.players)
   const currentPlayer = useBattleStore((state) => state.currentPlayer)
+  const player = useBattleStore((state) => state.players[playerId])
+  const otherPlayerReady = useBattleStore(
+    (state) => state.players[playerId === 1 ? 2 : 1].ready,
+  )
 
-  const player = players[playerId]
+  // Calculate canStartGame locally
+  const canStartGame = player.ready && otherPlayerReady
   const { data: pokemon, isLoading: pokemonLoading } = usePokemon(player.id)
   const { movesWithData, isLoading: movesLoading } = useMoves(pokemon?.moves)
   const [availableMoves, setAvailableMoves] = useState<Move[]>([])
-  
+  const updatePlayer = useBattleStore((state) => state.updatePlayer)
+
   const isLoading = pokemonLoading || movesLoading
 
   useEffect(() => {
+    console.log('effect run')
+
     if (movesWithData.length === 10) {
+      console.log('effect effecting')
+
       setAvailableMoves(movesWithData)
       updatePlayer(playerId, {
         hp: pokemon?.stats[0].base_stat || 0,
       })
     }
-  }, [movesWithData, playerId, pokemon?.stats, updatePlayer])
+  }, [movesWithData, playerId, pokemon?.stats])
 
   if (isLoading) {
     return (
@@ -60,7 +67,7 @@ export default function PokemonCard({ playerId }: Props) {
       </div>
     )
   }
-  
+
   if (!pokemon) return null
 
   function handleDragEnd(event: any) {
@@ -117,7 +124,7 @@ export default function PokemonCard({ playerId }: Props) {
             pokemonId={player.id}
             moves={player.moves}
             playerId={playerId}
-            disabled={currentPlayer !== playerId && !canStartGame() && !winner}
+            disabled={currentPlayer !== playerId && !canStartGame && !winner}
           />
         </div>
         {availableMoves.length ? (
@@ -131,3 +138,5 @@ export default function PokemonCard({ playerId }: Props) {
     </div>
   )
 }
+
+export default PokemonCard

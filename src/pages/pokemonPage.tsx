@@ -7,7 +7,7 @@ import BattleLog from '../features/pokemon/components/BattleLog'
 import PokemonCard from '../features/pokemon/components/PokemonCard'
 
 export default function PokemonPage() {
-  const { initGame } = useBattleStore((state) => state)
+  const initGame = useBattleStore((state) => state.initGame)
 
   useEffect(() => {
     return () => {
