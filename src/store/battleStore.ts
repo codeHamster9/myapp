@@ -9,6 +9,7 @@ interface Player {
   ready: boolean
   hp: number
   moves: Move[]
+  isAttacked: boolean
 }
 
 interface BattleState {
@@ -25,14 +26,15 @@ interface BattleActions {
   canStartGame: () => boolean
   updatePlayer: (playerId: number, updates: Partial<Omit<Player, 'id'>>) => void
   handleMove: (move: Move, playerId: number) => void
+  clearAttackState: (playerId: number) => void
 }
 
 const getRandomPokemonId = () => Math.floor(Math.random() * 151) + 1
 
 const initialState = {
   players: {
-    1: { id: getRandomPokemonId(), ready: false, hp: 0, moves: [] },
-    2: { id: getRandomPokemonId(), ready: false, hp: 0, moves: [] },
+    1: { id: getRandomPokemonId(), ready: false, hp: 0, moves: [], isAttacked: false },
+    2: { id: getRandomPokemonId(), ready: false, hp: 0, moves: [], isAttacked: false },
   },
   isPlayer1Turn: true,
   gameLog: [],
@@ -55,6 +57,8 @@ const useBattleStore = create<BattleState & BattleActions>()(
           state.players[2].hp = 0
           state.players[1].moves = []
           state.players[2].moves = []
+          state.players[1].isAttacked = false
+          state.players[2].isAttacked = false
           state.isPlayer1Turn = true
           state.gameLog = []
           state.winner = null
@@ -84,7 +88,9 @@ const useBattleStore = create<BattleState & BattleActions>()(
         const newHp = Math.max(0, opponent.hp - damage)
 
         set((state) => {
-          state.players[playerId === 1 ? 2 : 1].hp = newHp
+          const opponentId = playerId === 1 ? 2 : 1
+          state.players[opponentId].hp = newHp
+          state.players[opponentId].isAttacked = true
           state.gameLog.push(
             `${playerId === 1 ? 'Player 1' : 'Player 2'} used ${move.name} for ${damage} damage!`,
           )
@@ -104,6 +110,12 @@ const useBattleStore = create<BattleState & BattleActions>()(
       canStartGame: () => {
         const { players } = get()
         return players[1].ready && players[2].ready
+      },
+
+      clearAttackState: (playerId: number) => {
+        set((state) => {
+          state.players[playerId].isAttacked = false
+        })
       },
     })),
     { name: 'battle-store' },
