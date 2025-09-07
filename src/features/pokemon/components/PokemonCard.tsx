@@ -35,6 +35,7 @@ function PokemonCard({ playerId }: Props) {
   const updatePlayer = useBattleStore((state) => state.updatePlayer)
 
   const isLoading = pokemonLoading || movesLoading
+  const maxMoves = Math.min(6, movesWithData.length)
 
   useEffect(() => {
     console.log('effect run')
@@ -84,27 +85,27 @@ function PokemonCard({ playerId }: Props) {
   function handleDragEnd(event: any) {
     const { active, over } = event
 
-    if (over && active.id !== over.id && player.moves.length < 6) {
+    if (over && active.id !== over.id && player.moves.length < maxMoves) {
       const draggedMove = availableMoves.find((m) => m.name === active.id)
       if (!draggedMove) return
 
       setAvailableMoves([...availableMoves.filter((m) => m.name !== active.id)])
       updatePlayer(playerId, { moves: [...player.moves, draggedMove] })
 
-      if (player.moves.length === 6) {
+      if (player.moves.length === maxMoves - 1) {
         updatePlayer(playerId, { ready: true })
       }
     }
   }
 
   function handleClick(move: Move) {
-    if (player.moves.length >= 6) return
+    if (player.moves.length >= maxMoves) return
 
     const moves = [...player.moves, move]
     setAvailableMoves([...availableMoves.filter((m) => m.name !== move.name)])
     updatePlayer(playerId, { moves })
 
-    if (moves.length === 6) {
+    if (moves.length === maxMoves) {
       updatePlayer(playerId, { ready: true })
     }
   }
@@ -142,7 +143,7 @@ function PokemonCard({ playerId }: Props) {
           moves={availableMoves}
           pokemonId={player.id}
           onClick={handleClick}
-          isVisible={availableMoves.length > 0 && player.moves.length < 6}
+          isVisible={availableMoves.length > 0 && player.moves.length < maxMoves}
         />
       </DndContext>
     </div>

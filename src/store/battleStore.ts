@@ -33,8 +33,20 @@ const getRandomPokemonId = () => Math.floor(Math.random() * 151) + 1
 
 const initialState = {
   players: {
-    1: { id: getRandomPokemonId(), ready: false, hp: 0, moves: [], isAttacked: false },
-    2: { id: getRandomPokemonId(), ready: false, hp: 0, moves: [], isAttacked: false },
+    1: {
+      id: getRandomPokemonId(),
+      ready: false,
+      hp: 0,
+      moves: [],
+      isAttacked: false,
+    },
+    2: {
+      id: getRandomPokemonId(),
+      ready: false,
+      hp: 0,
+      moves: [],
+      isAttacked: false,
+    },
   },
   isPlayer1Turn: true,
   gameLog: [],
