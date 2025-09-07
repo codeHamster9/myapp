@@ -110,8 +110,21 @@ function PokemonCard({ playerId }: Props) {
     }
   }
 
+  function handleRandomSelectAll() {
+    const remainingSlots = maxMoves - player.moves.length
+    const shuffled = [...availableMoves].sort(() => Math.random() - 0.5)
+    const randomMoves = shuffled.slice(0, remainingSlots)
+
+    const newMoves = [...player.moves, ...randomMoves]
+    setAvailableMoves(availableMoves.filter((m) => !randomMoves.includes(m)))
+    updatePlayer(playerId, {
+      moves: newMoves,
+      ready: newMoves.length === maxMoves,
+    })
+  }
+
   const cardContent = (
-    <div className="flex flex-col gap-">
+    <div className="flex flex-col">
       <DndContext onDragEnd={handleDragEnd}>
         <div className={`border rounded-lg bg-white shadow-md p-4`}>
           <div className="flex items-center justify-between">
@@ -143,7 +156,10 @@ function PokemonCard({ playerId }: Props) {
           moves={availableMoves}
           pokemonId={player.id}
           onClick={handleClick}
-          isVisible={availableMoves.length > 0 && player.moves.length < maxMoves}
+          onRandomSelectAll={handleRandomSelectAll}
+          isVisible={
+            availableMoves.length > 0 && player.moves.length < maxMoves
+          }
         />
       </DndContext>
     </div>
