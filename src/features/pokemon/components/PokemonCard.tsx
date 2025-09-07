@@ -57,10 +57,10 @@ function PokemonCard({ playerId }: Props) {
 
   if (isLoading) {
     return (
-      <div className="border rounded-lg bg-white shadow-md p-4">
+      <div className="border rounded-lg bg-card shadow-md p-4">
         <div className="flex items-center justify-between">
           <h2 className="text-amber-500">Player {playerId}</h2>
-          <span className="px-2 py-1 rounded text-sm font-medium bg-blue-100 text-blue-800">
+          <span className="px-2 py-1 rounded text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
             Loading...
           </span>
         </div>
@@ -122,14 +122,14 @@ function PokemonCard({ playerId }: Props) {
   const cardContent = (
     <div className="flex flex-col">
       <DndContext onDragEnd={handleDragEnd}>
-        <div className={`border rounded-lg bg-white shadow-md p-4`}>
+        <div className={`border rounded-lg bg-card shadow-md p-4`}>
           <div className="flex items-center justify-between">
             <h2 className="text-amber-500">{playerId}</h2>
             <span
               className={`px-2 py-1 rounded text-sm font-medium ${
                 player.ready
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-yellow-100 text-yellow-800'
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
               }`}
             >
               {player.ready ? 'Ready' : 'Selecting moves...'}

@@ -29,7 +29,7 @@ export function PokemonAvailableMoves({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
           transition={{ duration: 0.3, ease: 'easeInOut' }}
-          className="mt-4 border rounded-lg bg-white shadow-md p-4 min-h-20"
+          className="mt-4 border rounded-lg bg-card shadow-md p-4 min-h-20"
         >
           <button
             onClick={onRandomSelectAll}

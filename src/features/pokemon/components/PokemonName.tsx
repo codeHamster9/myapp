@@ -3,7 +3,7 @@ interface PokemonNameProps {
 }
 export function PokemonName({ name }: PokemonNameProps) {
   return (
-    <h2 className="text-xl capitalize text-center font-semibold text-gray-800">
+    <h2 className="text-xl capitalize text-center font-semibold text-foreground">
       {name}
     </h2>
   )

@@ -15,16 +15,16 @@ export default function BattleLog() {
   return (
     <div
       ref={logContainerRef}
-      className="mt-8 border p-4 rounded-lg bg-white shadow-inner max-h-64 min-h-32 overflow-y-auto scroll-smooth"
+      className="mt-8 border p-4 rounded-lg bg-card shadow-inner max-h-64 min-h-32 overflow-y-auto scroll-smooth"
     >
-      <h3 className="font-semibold mb-2 text-gray-700">Battle Log</h3>
+      <h3 className="font-semibold mb-2 text-foreground">Battle Log</h3>
       {logs.map((log, i) => (
         <p
           key={i}
           className={`py-1 ${
             log.includes('wins')
-              ? 'text-green-600 font-semibold'
-              : 'text-gray-600'
+              ? 'text-green-600 dark:text-green-400 font-semibold'
+              : 'text-muted-foreground'
           }`}
         >
           {log}

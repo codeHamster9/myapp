@@ -8,13 +8,13 @@ export function HpBar({ hp, maxHp }: HpBarProps) {
   const barColor = hp < maxHp * 0.2 ? '#ef4444' : undefined
   return (
     <div className="mt-2">
-      <div className="bg-gray-200 h-4 rounded-full overflow-hidden">
+      <div className="bg-gray-200 dark:bg-gray-700 h-4 rounded-full overflow-hidden">
         <div
           className="bg-green-500 h-full rounded-full transition-all duration-300"
           style={{ width: `${percent}%`, backgroundColor: barColor }}
         />
       </div>
-      <p className="text-center mt-1 text-black">
+      <p className="text-center mt-1 text-foreground">
         HP: {hp}/{maxHp}
       </p>
     </div>
