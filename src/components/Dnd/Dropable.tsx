@@ -11,18 +11,15 @@ export function Droppable({
   const { isOver, setNodeRef } = useDroppable({
     id: id,
   })
-  const style = {
-    color: isOver ? 'green' : undefined,
-    // height: '200px',
-    border: '2px dashed gray',
-    padding: '10px',
-    backgroundColor: isOver ? '#f0fff4' : '#fff',
-    borderRadius: '8px',
-    transition: 'background-color 0.2s ease',
-  }
-
   return (
-    <div ref={setNodeRef} style={style}>
+    <div 
+      ref={setNodeRef} 
+      className={`border-2 border-dashed p-2 rounded-lg transition-all ${
+        isOver 
+          ? 'border-green-400 bg-green-50 shadow-lg shadow-green-400/20' 
+          : 'border-gray-300 bg-white'
+      }`}
+    >
       {children}
     </div>
   )

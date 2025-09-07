@@ -1,3 +1,4 @@
+import { useDndContext } from '@dnd-kit/core'
 import type { Move } from '../types/pokemon'
 
 import {
@@ -24,6 +25,10 @@ export function MoveButton({
   className = '',
   draggable = false,
 }: MoveButtonProps) {
+  const { active, over } = useDndContext()
+  const isDragging = active?.id === move.name
+  const isHoveringDropZone = isDragging && over && over.id.toString().startsWith('moves-')
+
   return (
     <TooltipProvider>
       <Tooltip>
@@ -32,11 +37,13 @@ export function MoveButton({
             onClick={() => onClick?.(move)}
             onDoubleClick={() => onDoubleClick?.(move)}
             disabled={disabled}
-            className={`h-9 w-full px-2 py-1 rounded capitalize transition-colors text-white shadow-lg border-b-4 ${
+            className={`h-9 w-full px-2 py-1 rounded capitalize transition-all text-white shadow-lg border-b-4 ${
               disabled
                 ? 'bg-gray-400 cursor-not-allowed border-gray-600'
                 : draggable
-                  ? 'bg-gray-500 hover:bg-gray-600 border-gray-800 hover:-translate-y-0.5 hover:shadow-xl active:border-b-2 active:translate-y-1'
+                  ? `bg-gray-500 hover:bg-gray-600 border-gray-800 hover:-translate-y-0.5 hover:shadow-xl active:border-b-2 active:translate-y-1 ${
+                      isHoveringDropZone ? 'shadow-2xl shadow-green-400/50 ring-2 ring-green-400' : ''
+                    }`
                   : 'bg-blue-500 hover:bg-blue-600 border-blue-700 hover:-translate-y-0.5 hover:shadow-xl active:border-b-2 active:translate-y-0.5'
             } ${className}`}
           >

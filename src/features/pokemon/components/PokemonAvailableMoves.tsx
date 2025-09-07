@@ -27,7 +27,7 @@ export function PokemonAvailableMoves({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
           transition={{ duration: 0.3, ease: 'easeInOut' }}
-          className="mt-4 grid grid-cols-2 gap-2 gap-y-2 border rounded-lg bg-white shadow-md p-4 min-h-20 overflow-y-auto"
+          className="mt-4 grid grid-cols-2 gap-2 gap-y-2 border rounded-lg bg-white shadow-md p-4 min-h-20"
         >
           {moves.map((move, index) => (
             <motion.div
