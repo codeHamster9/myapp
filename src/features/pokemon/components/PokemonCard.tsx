@@ -38,17 +38,13 @@ function PokemonCard({ playerId }: Props) {
   const maxMoves = Math.min(6, movesWithData.length)
 
   useEffect(() => {
-    console.log('effect run')
-
-    if (movesWithData.length === 10) {
-      console.log('effect effecting')
-
+    if (movesWithData.length > maxMoves) {
       setAvailableMoves(movesWithData)
       updatePlayer(playerId, {
         hp: pokemon?.stats[0].base_stat || 0,
       })
     }
-  }, [movesWithData, playerId, pokemon?.stats])
+  }, [movesWithData, playerId, pokemon?.stats, updatePlayer])
 
   useEffect(() => {
     if (player.isAttacked) {
