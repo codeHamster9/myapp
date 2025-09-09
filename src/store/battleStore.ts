@@ -10,6 +10,7 @@ interface Player {
   hp: number
   moves: Move[]
   isAttacked: boolean
+  isDefeated: boolean
 }
 
 interface BattleState {
@@ -27,6 +28,7 @@ interface BattleActions {
   updatePlayer: (playerId: number, updates: Partial<Omit<Player, 'id'>>) => void
   handleMove: (move: Move) => void
   clearAttackState: (playerId: number) => void
+  clearDefeatState: (playerId: number) => void
 }
 
 const getRandomPokemonId = () => Math.floor(Math.random() * 151) + 1
@@ -39,6 +41,7 @@ const initialState = {
       hp: 0,
       moves: [],
       isAttacked: false,
+      isDefeated: false,
     },
     2: {
       id: getRandomPokemonId(),
@@ -46,6 +49,7 @@ const initialState = {
       hp: 0,
       moves: [],
       isAttacked: false,
+      isDefeated: false,
     },
   },
   isPlayer1Turn: true,
@@ -71,6 +75,8 @@ const useBattleStore = create<BattleState & BattleActions>()(
           state.players[2].moves = []
           state.players[1].isAttacked = false
           state.players[2].isAttacked = false
+          state.players[1].isDefeated = false
+          state.players[2].isDefeated = false
           state.isPlayer1Turn = true
           state.gameLog = []
           state.winner = null
@@ -109,12 +115,8 @@ const useBattleStore = create<BattleState & BattleActions>()(
           state.isPlayer1Turn = !isPlayer1Turn
           state.currentPlayer = isPlayer1Turn ? 2 : 1
           if (newHp <= 0) {
-            // Delay winner declaration until after attack animation
-            setTimeout(() => {
-              set((state) => {
-                state.winner = currentPlayer === 1 ? 'Player 1' : 'Player 2'
-              })
-            }, 1100) // Slightly after attack animation (1000ms)
+            state.players[opponentId].isDefeated = true
+            state.winner = currentPlayer === 1 ? 'Player 1' : 'Player 2'
           }
         })
       },
@@ -132,6 +134,12 @@ const useBattleStore = create<BattleState & BattleActions>()(
       clearAttackState: (playerId: number) => {
         set((state) => {
           state.players[playerId].isAttacked = false
+        })
+      },
+
+      clearDefeatState: (playerId: number) => {
+        set((state) => {
+          state.players[playerId].isDefeated = false
         })
       },
     })),

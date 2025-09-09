@@ -27,15 +27,18 @@ function PokemonCard({ playerId }: Props) {
     (state) => state.players[playerId === 1 ? 2 : 1].ready,
   )
   const clearAttackState = useBattleStore((state) => state.clearAttackState)
+  const clearDefeatState = useBattleStore((state) => state.clearDefeatState)
   
   const isWinner = winner === `Player ${playerId}`
+  const isDefeated = player.isDefeated
 
   // Calculate canStartGame locally
   const canStartGame = player.ready && otherPlayerReady
   const { data: pokemon, isLoading: pokemonLoading } = usePokemon(player.id)
   const { movesWithData, isLoading: movesLoading } = useMoves(pokemon?.moves)
   const [availableMoves, setAvailableMoves] = useState<Move[]>([])
-  const [showWinnerBorder, setShowWinnerBorder] = useState(false)
+  const [defeatColor, setDefeatColor] = useState('#ff0000')
+  const defeatColors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffa500']
   const updatePlayer = useBattleStore((state) => state.updatePlayer)
 
   const isLoading = pokemonLoading || movesLoading
@@ -60,16 +63,25 @@ function PokemonCard({ playerId }: Props) {
   }, [player.isAttacked, playerId, clearAttackState])
 
   useEffect(() => {
-    if (isWinner && !player.isAttacked) {
-      setShowWinnerBorder(true)
-      const timer = setTimeout(() => {
-        setShowWinnerBorder(false)
+    if (isDefeated) {
+      let colorIndex = 0
+      const colorInterval = setInterval(() => {
+        setDefeatColor(defeatColors[colorIndex])
+        colorIndex = (colorIndex + 1) % defeatColors.length
+      }, 300)
+      
+      const clearTimer = setTimeout(() => {
+        clearDefeatState(playerId)
       }, 5000)
-      return () => clearTimeout(timer)
+      
+      return () => {
+        clearInterval(colorInterval)
+        clearTimeout(clearTimer)
+      }
     } else {
-      setShowWinnerBorder(false)
+      setDefeatColor('#ff0000')
     }
-  }, [isWinner, player.isAttacked])
+  }, [isDefeated, playerId, clearDefeatState])
 
   if (isLoading) {
     return (
@@ -153,7 +165,7 @@ function PokemonCard({ playerId }: Props) {
           <PokemonSelectedMoves
             pokemonId={player.id}
             moves={player.moves}
-            disabled={currentPlayer !== playerId || !canStartGame || !!winner || player.isAttacked || showWinnerBorder}
+            disabled={currentPlayer !== playerId || !canStartGame || !!winner || player.isAttacked || isDefeated}
           />
         </div>
         <PokemonAvailableMoves
@@ -183,12 +195,12 @@ function PokemonCard({ playerId }: Props) {
     )
   }
 
-  if (showWinnerBorder) {
+  if (isDefeated) {
     return (
       <ElectricBorder
-        color="#ffd700"
-        speed={2}
-        chaos={1.5}
+        color={defeatColor}
+        speed={4}
+        chaos={3}
         thickness={3}
         style={{ borderRadius: 16 }}
       >
