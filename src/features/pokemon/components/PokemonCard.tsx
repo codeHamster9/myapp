@@ -26,6 +26,8 @@ function PokemonCard({ playerId }: Props) {
     (state) => state.players[playerId === 1 ? 2 : 1].ready,
   )
   const clearAttackState = useBattleStore((state) => state.clearAttackState)
+  
+  const isWinner = winner === `Player ${playerId}`
 
   // Calculate canStartGame locally
   const canStartGame = player.ready && otherPlayerReady
@@ -127,12 +129,14 @@ function PokemonCard({ playerId }: Props) {
             <h2 className="text-amber-500">{playerId}</h2>
             <span
               className={`px-2 py-1 rounded text-sm font-medium ${
-                player.ready
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                isWinner
+                  ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white font-bold animate-pulse'
+                  : player.ready
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
               }`}
             >
-              {player.ready ? 'Ready' : 'Selecting moves...'}
+              {isWinner ? '🏆 WINNER!' : player.ready ? 'Ready' : 'Selecting moves...'}
             </span>
           </div>
           <PokemonImage
@@ -159,6 +163,20 @@ function PokemonCard({ playerId }: Props) {
       </DndContext>
     </div>
   )
+
+  if (isWinner) {
+    return (
+      <ElectricBorder
+        color="#ffd700"
+        speed={2}
+        chaos={1.5}
+        thickness={3}
+        style={{ borderRadius: 16 }}
+      >
+        {cardContent}
+      </ElectricBorder>
+    )
+  }
 
   return player.isAttacked ? (
     <ElectricBorder
