@@ -9,6 +9,7 @@ import { usePokemon, useMoves } from '../services/pokemonService'
 import type { Move } from '../types/pokemon'
 
 import { HpBar } from './HpBar'
+import { PlayerStatus } from './PlayerStatus'
 import { PokemonAvailableMoves } from './PokemonAvailableMoves'
 import { PokemonImage } from './PokemonImage'
 import { PokemonName } from './PokemonName'
@@ -125,20 +126,11 @@ function PokemonCard({ playerId }: Props) {
     <div className="flex flex-col">
       <DndContext onDragEnd={handleDragEnd}>
         <div className={`border rounded-lg bg-card shadow-md p-4`}>
-          <div className="flex items-center justify-between">
-            <h2 className="text-amber-500">{playerId}</h2>
-            <span
-              className={`px-2 py-1 rounded text-sm font-medium ${
-                isWinner
-                  ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white font-bold animate-pulse'
-                  : player.ready
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-              }`}
-            >
-              {isWinner ? '🏆 WINNER!' : player.ready ? 'Ready' : 'Selecting moves...'}
-            </span>
-          </div>
+          <PlayerStatus
+            playerId={playerId}
+            isReady={player.ready}
+            isWinner={isWinner}
+          />
           <PokemonImage
             src={pokemon.sprites.front_default}
             alt={pokemon.name}
