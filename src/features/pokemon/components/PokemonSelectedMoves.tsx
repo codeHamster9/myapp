@@ -19,7 +19,7 @@ export function PokemonSelectedMoves({
   const handleMove = useBattleStore((state) => state.handleMove)
 
   function handleMoveClick(move: Move) {
-    if (disabled) return
+    if (disabled || !playerId) return
     handleMove(move, playerId)
   }
 

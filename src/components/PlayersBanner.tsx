@@ -1,7 +1,9 @@
 import useBattleStore from '@/store/battleStore'
 
 export const PlayersBanner = () => {
-  const { winner, currentPlayer, initGame } = useBattleStore((state) => state)
+  const winner = useBattleStore((state) => state.winner)
+  const currentPlayer = useBattleStore((state) => state.currentPlayer)
+  const initGame = useBattleStore((state) => state.initGame)
   return (
     <>
       {winner && (

@@ -1,5 +1,4 @@
 import { useDndContext } from '@dnd-kit/core'
-import type { Move } from '../types/pokemon'
 
 import {
   Tooltip,
@@ -7,6 +6,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+
+import type { Move } from '../types/pokemon'
 
 interface MoveButtonProps {
   move: Move
@@ -27,7 +28,8 @@ export function MoveButton({
 }: MoveButtonProps) {
   const { active, over } = useDndContext()
   const isDragging = active?.id === move.name
-  const isHoveringDropZone = isDragging && over && over.id.toString().startsWith('moves-')
+  const isHoveringDropZone =
+    isDragging && over && over.id.toString().startsWith('moves-')
 
   return (
     <TooltipProvider>
@@ -42,7 +44,9 @@ export function MoveButton({
                 ? 'bg-gray-400 cursor-not-allowed border-gray-600'
                 : draggable
                   ? `bg-gray-500 hover:bg-gray-600 border-gray-800 hover:-translate-y-0.5 hover:shadow-xl active:border-b-2 active:translate-y-1 ${
-                      isHoveringDropZone ? 'shadow-2xl shadow-green-400/50 ring-2 ring-green-400' : ''
+                      isHoveringDropZone
+                        ? 'shadow-2xl shadow-green-400/50 ring-2 ring-green-400'
+                        : ''
                     }`
                   : 'bg-blue-500 hover:bg-blue-600 border-blue-700 hover:-translate-y-0.5 hover:shadow-xl active:border-b-2 active:translate-y-0.5'
             } ${className}`}
