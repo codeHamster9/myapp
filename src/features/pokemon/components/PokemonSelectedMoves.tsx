@@ -5,7 +5,6 @@ import { MoveButton } from './MoveButton'
 
 type Props = {
   pokemonId: number
-  playerId?: number
   moves: Move[]
   disabled: boolean
 }
@@ -14,13 +13,12 @@ export function PokemonSelectedMoves({
   pokemonId,
   moves,
   disabled,
-  playerId,
 }: Props) {
   const handleMove = useBattleStore((state) => state.handleMove)
 
   function handleMoveClick(move: Move) {
-    if (disabled || !playerId) return
-    handleMove(move, playerId)
+    if (disabled) return
+    handleMove(move)
   }
 
   return (

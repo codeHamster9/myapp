@@ -25,7 +25,7 @@ interface BattleActions {
   isPlayerReady: (pokemonId: number) => boolean
   canStartGame: () => boolean
   updatePlayer: (playerId: number, updates: Partial<Omit<Player, 'id'>>) => void
-  handleMove: (move: Move, playerId: number) => void
+  handleMove: (move: Move) => void
   clearAttackState: (playerId: number) => void
 }
 
@@ -87,10 +87,10 @@ const useBattleStore = create<BattleState & BattleActions>()(
         })
       },
 
-      handleMove: (move: Move, playerId: number) => {
-        const { players, isPlayer1Turn } = get()
-        const player = players[playerId]
-        const opponent = players[playerId === 1 ? 2 : 1]
+      handleMove: (move: Move) => {
+        const { players, isPlayer1Turn, currentPlayer } = get()
+        const player = players[currentPlayer]
+        const opponent = players[currentPlayer === 1 ? 2 : 1]
 
         if (!player || !opponent) return
 
@@ -100,16 +100,16 @@ const useBattleStore = create<BattleState & BattleActions>()(
         const newHp = Math.max(0, opponent.hp - damage)
 
         set((state) => {
-          const opponentId = playerId === 1 ? 2 : 1
+          const opponentId = currentPlayer === 1 ? 2 : 1
           state.players[opponentId].hp = newHp
           state.players[opponentId].isAttacked = true
           state.gameLog.push(
-            `${playerId === 1 ? 'Player 1' : 'Player 2'} used ${move.name} for ${damage} damage!`,
+            `${currentPlayer === 1 ? 'Player 1' : 'Player 2'} used ${move.name} for ${damage} damage!`,
           )
           state.isPlayer1Turn = !isPlayer1Turn
           state.currentPlayer = isPlayer1Turn ? 2 : 1
           if (newHp <= 0) {
-            state.winner = playerId === 1 ? 'Player 1' : 'Player 2'
+            state.winner = currentPlayer === 1 ? 'Player 1' : 'Player 2'
           }
         })
       },
