@@ -109,7 +109,12 @@ const useBattleStore = create<BattleState & BattleActions>()(
           state.isPlayer1Turn = !isPlayer1Turn
           state.currentPlayer = isPlayer1Turn ? 2 : 1
           if (newHp <= 0) {
-            state.winner = currentPlayer === 1 ? 'Player 1' : 'Player 2'
+            // Delay winner declaration until after attack animation
+            setTimeout(() => {
+              set((state) => {
+                state.winner = currentPlayer === 1 ? 'Player 1' : 'Player 2'
+              })
+            }, 1100) // Slightly after attack animation (1000ms)
           }
         })
       },

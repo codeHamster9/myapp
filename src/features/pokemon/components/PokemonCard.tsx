@@ -35,6 +35,7 @@ function PokemonCard({ playerId }: Props) {
   const { data: pokemon, isLoading: pokemonLoading } = usePokemon(player.id)
   const { movesWithData, isLoading: movesLoading } = useMoves(pokemon?.moves)
   const [availableMoves, setAvailableMoves] = useState<Move[]>([])
+  const [showWinnerBorder, setShowWinnerBorder] = useState(false)
   const updatePlayer = useBattleStore((state) => state.updatePlayer)
 
   const isLoading = pokemonLoading || movesLoading
@@ -53,10 +54,22 @@ function PokemonCard({ playerId }: Props) {
     if (player.isAttacked) {
       const timer = setTimeout(() => {
         clearAttackState(playerId)
-      }, 2000)
+      }, 1000)
       return () => clearTimeout(timer)
     }
   }, [player.isAttacked, playerId, clearAttackState])
+
+  useEffect(() => {
+    if (isWinner && !player.isAttacked) {
+      setShowWinnerBorder(true)
+      const timer = setTimeout(() => {
+        setShowWinnerBorder(false)
+      }, 5000)
+      return () => clearTimeout(timer)
+    } else {
+      setShowWinnerBorder(false)
+    }
+  }, [isWinner, player.isAttacked])
 
   if (isLoading) {
     return (
@@ -140,7 +153,7 @@ function PokemonCard({ playerId }: Props) {
           <PokemonSelectedMoves
             pokemonId={player.id}
             moves={player.moves}
-            disabled={currentPlayer !== playerId || !canStartGame || !!winner}
+            disabled={currentPlayer !== playerId || !canStartGame || !!winner || player.isAttacked || showWinnerBorder}
           />
         </div>
         <PokemonAvailableMoves
@@ -156,7 +169,21 @@ function PokemonCard({ playerId }: Props) {
     </div>
   )
 
-  if (isWinner) {
+  if (player.isAttacked) {
+    return (
+      <ElectricBorder
+        color="#ff0000"
+        speed={3}
+        chaos={2}
+        thickness={2}
+        style={{ borderRadius: 16 }}
+      >
+        {cardContent}
+      </ElectricBorder>
+    )
+  }
+
+  if (showWinnerBorder) {
     return (
       <ElectricBorder
         color="#ffd700"
@@ -170,19 +197,7 @@ function PokemonCard({ playerId }: Props) {
     )
   }
 
-  return player.isAttacked ? (
-    <ElectricBorder
-      color="#ff0000"
-      speed={3}
-      chaos={2}
-      thickness={2}
-      style={{ borderRadius: 16 }}
-    >
-      {cardContent}
-    </ElectricBorder>
-  ) : (
-    cardContent
-  )
+  return cardContent
 }
 
 export default PokemonCard
