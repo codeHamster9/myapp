@@ -1,16 +1,28 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { roomService } from '@/services/roomService'
+import { testConnection } from '@/lib/testSupabase'
 
 export default function LobbyPage() {
   const [roomCode, setRoomCode] = useState('')
+  const [isConnected, setIsConnected] = useState(false)
   const navigate = useNavigate()
 
-  const createRoom = () => {
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase()
-    navigate(`/room/${code}`)
+  useEffect(() => {
+    testConnection().then(setIsConnected)
+  }, [])
+
+  const createRoom = async () => {
+    try {
+      const code = Math.random().toString(36).substring(2, 8).toUpperCase()
+      await roomService.createRoom(code)
+      navigate(`/room/${code}`)
+    } catch (error) {
+      console.error('Failed to create room:', error)
+    }
   }
 
   const joinRoom = () => {

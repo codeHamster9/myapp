@@ -16,30 +16,30 @@ import { PokemonName } from './PokemonName'
 import { PokemonSelectedMoves } from './PokemonSelectedMoves'
 
 interface Props {
-  playerId: number
+  type: 'player' | 'opponent'
 }
 
-function PokemonCard({ playerId }: Props) {
+function PokemonCard({ type }: Props) {
   const winner = useBattleStore((state) => state.winner)
-  const currentPlayer = useBattleStore((state) => state.currentPlayer)
-  const player = useBattleStore((state) => state.players[playerId])
-  const otherPlayerReady = useBattleStore(
-    (state) => state.players[playerId === 1 ? 2 : 1].ready,
-  )
+  const isMyTurn = useBattleStore((state) => state.isMyTurn)
+  const player = useBattleStore((state) => type === 'player' ? state.player : state.opponent)
+  const otherPlayer = useBattleStore((state) => type === 'player' ? state.opponent : state.player)
+  const otherPlayerReady = otherPlayer?.ready || false
   const clearAttackState = useBattleStore((state) => state.clearAttackState)
   const clearDefeatState = useBattleStore((state) => state.clearDefeatState)
   
-  const isWinner = winner === `Player ${playerId}`
-  const isDefeated = player.isDefeated
+  const isWinner = winner === (type === 'player' ? 'You' : 'Opponent')
+  const isDefeated = player?.isDefeated || false
 
   // Calculate canStartGame locally
-  const canStartGame = player.ready && otherPlayerReady
-  const { data: pokemon, isLoading: pokemonLoading } = usePokemon(player.id)
+  const canStartGame = (player?.ready || false) && otherPlayerReady
+  const { data: pokemon, isLoading: pokemonLoading } = usePokemon(player?.id || 0)
   const { movesWithData, isLoading: movesLoading } = useMoves(pokemon?.moves)
   const [availableMoves, setAvailableMoves] = useState<Move[]>([])
   const [defeatColor, setDefeatColor] = useState('#ff0000')
   const defeatColors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffa500']
   const updatePlayer = useBattleStore((state) => state.updatePlayer)
+  const updateOpponent = useBattleStore((state) => state.updateOpponent)
 
   const isLoading = pokemonLoading || movesLoading
   const maxMoves = Math.min(6, movesWithData.length)
@@ -47,20 +47,22 @@ function PokemonCard({ playerId }: Props) {
   useEffect(() => {
     if (movesWithData.length > maxMoves) {
       setAvailableMoves(movesWithData)
-      updatePlayer(playerId, {
-        hp: pokemon?.stats[0].base_stat || 0,
-      })
+      if (type === 'player') {
+        updatePlayer({
+          hp: pokemon?.stats[0].base_stat || 0,
+        })
+      }
     }
-  }, [movesWithData, playerId, pokemon?.stats, updatePlayer])
+  }, [movesWithData, type, pokemon?.stats, updatePlayer])
 
   useEffect(() => {
-    if (player.isAttacked) {
+    if (player?.isAttacked) {
       const timer = setTimeout(() => {
-        clearAttackState(playerId)
+        clearAttackState(type)
       }, 1000)
       return () => clearTimeout(timer)
     }
-  }, [player.isAttacked, playerId, clearAttackState])
+  }, [player?.isAttacked, type, clearAttackState])
 
   useEffect(() => {
     if (isDefeated) {
@@ -71,7 +73,7 @@ function PokemonCard({ playerId }: Props) {
       }, 300)
       
       const clearTimer = setTimeout(() => {
-        clearDefeatState(playerId)
+        clearDefeatState(type)
       }, 5000)
       
       return () => {
@@ -81,13 +83,13 @@ function PokemonCard({ playerId }: Props) {
     } else {
       setDefeatColor('#ff0000')
     }
-  }, [isDefeated, playerId, clearDefeatState])
+  }, [isDefeated, type, clearDefeatState])
 
   if (isLoading) {
     return (
       <div className="border rounded-lg bg-card shadow-md p-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-amber-500">Player {playerId}</h2>
+          <h2 className="text-amber-500">{type === 'player' ? 'You' : 'Opponent'}</h2>
           <span className="px-2 py-1 rounded text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
             Loading...
           </span>
@@ -109,42 +111,46 @@ function PokemonCard({ playerId }: Props) {
   function handleDragEnd(event: any) {
     const { active, over } = event
 
-    if (over && active.id !== over.id && player.moves.length < maxMoves) {
+    if (over && active.id !== over.id && player && player.moves.length < maxMoves) {
       const draggedMove = availableMoves.find((m) => m.name === active.id)
       if (!draggedMove) return
 
       setAvailableMoves([...availableMoves.filter((m) => m.name !== active.id)])
-      updatePlayer(playerId, { moves: [...player.moves, draggedMove] })
+      if (type === 'player') {
+        updatePlayer({ moves: [...player.moves, draggedMove] })
+      }
 
-      if (player.moves.length === maxMoves - 1) {
-        updatePlayer(playerId, { ready: true })
+      if (player.moves.length === maxMoves - 1 && type === 'player') {
+        updatePlayer({ ready: true })
       }
     }
   }
 
   function handleClick(move: Move) {
-    if (player.moves.length >= maxMoves) return
+    if (!player || player.moves.length >= maxMoves || type !== 'player') return
 
     const moves = [...player.moves, move]
     setAvailableMoves([...availableMoves.filter((m) => m.name !== move.name)])
-    updatePlayer(playerId, { moves })
+    updatePlayer({ moves })
 
     if (moves.length === maxMoves) {
-      updatePlayer(playerId, { ready: true })
+      updatePlayer({ ready: true })
     }
   }
 
   function handleRandomSelectAll() {
-    const remainingSlots = maxMoves - player.moves.length
+    const remainingSlots = maxMoves - (player?.moves.length || 0)
     const shuffled = [...availableMoves].sort(() => Math.random() - 0.5)
     const randomMoves = shuffled.slice(0, remainingSlots)
 
-    const newMoves = [...player.moves, ...randomMoves]
+    const newMoves = [...(player?.moves || []), ...randomMoves]
     setAvailableMoves(availableMoves.filter((m) => !randomMoves.includes(m)))
-    updatePlayer(playerId, {
-      moves: newMoves,
-      ready: newMoves.length === maxMoves,
-    })
+    if (type === 'player') {
+      updatePlayer({
+        moves: newMoves,
+        ready: newMoves.length === maxMoves,
+      })
+    }
   }
 
   const cardContent = (
@@ -152,8 +158,8 @@ function PokemonCard({ playerId }: Props) {
       <DndContext onDragEnd={handleDragEnd}>
         <div className={`border rounded-lg bg-card shadow-md p-4`}>
           <PlayerStatus
-            playerId={playerId}
-            isReady={player.ready}
+            playerId={type === 'player' ? 1 : 2}
+            isReady={player?.ready || false}
             isWinner={isWinner}
           />
           <PokemonImage
@@ -161,27 +167,27 @@ function PokemonCard({ playerId }: Props) {
             alt={pokemon.name}
           />
           <PokemonName name={pokemon.name} />
-          <HpBar hp={player.hp} maxHp={pokemon.stats[0].base_stat} />
+          <HpBar hp={player?.hp || 0} maxHp={pokemon.stats[0].base_stat} />
           <PokemonSelectedMoves
-            pokemonId={player.id}
-            moves={player.moves}
-            disabled={currentPlayer !== playerId || !canStartGame || !!winner || player.isAttacked || isDefeated}
+            pokemonId={player?.id || 0}
+            moves={player?.moves || []}
+            disabled={type !== 'player' || !isMyTurn || !canStartGame || !!winner || player?.isAttacked || isDefeated}
           />
         </div>
         <PokemonAvailableMoves
           moves={availableMoves}
-          pokemonId={player.id}
+          pokemonId={player?.id || 0}
           onClick={handleClick}
           onRandomSelectAll={handleRandomSelectAll}
           isVisible={
-            availableMoves.length > 0 && player.moves.length < maxMoves
+            type === 'player' && availableMoves.length > 0 && (player?.moves.length || 0) < maxMoves
           }
         />
       </DndContext>
     </div>
   )
 
-  if (player.isAttacked) {
+  if (player?.isAttacked) {
     return (
       <ElectricBorder
         color="#ff0000"

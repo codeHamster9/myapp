@@ -14,48 +14,32 @@ interface Player {
 }
 
 interface BattleState {
-  players: Record<number, Player>
-  isPlayer1Turn: boolean
+  player: Player | null
+  opponent: Player | null
+  isMyTurn: boolean
   gameLog: string[]
   winner: string | null
-  currentPlayer: number
 }
 
 interface BattleActions {
-  initGame: () => void
-  isPlayerReady: (pokemonId: number) => boolean
+  initPlayer: () => void
+  setOpponent: (opponentData: Player) => void
   canStartGame: () => boolean
-  updatePlayer: (playerId: number, updates: Partial<Omit<Player, 'id'>>) => void
+  updatePlayer: (updates: Partial<Omit<Player, 'id'>>) => void
+  updateOpponent: (updates: Partial<Omit<Player, 'id'>>) => void
   handleMove: (move: Move) => void
-  clearAttackState: (playerId: number) => void
-  clearDefeatState: (playerId: number) => void
+  clearAttackState: (target: 'player' | 'opponent') => void
+  clearDefeatState: (target: 'player' | 'opponent') => void
 }
 
 const getRandomPokemonId = () => Math.floor(Math.random() * 151) + 1
 
 const initialState = {
-  players: {
-    1: {
-      id: getRandomPokemonId(),
-      ready: false,
-      hp: 0,
-      moves: [],
-      isAttacked: false,
-      isDefeated: false,
-    },
-    2: {
-      id: getRandomPokemonId(),
-      ready: false,
-      hp: 0,
-      moves: [],
-      isAttacked: false,
-      isDefeated: false,
-    },
-  },
-  isPlayer1Turn: true,
+  player: null,
+  opponent: null,
+  isMyTurn: true,
   gameLog: [],
   winner: null,
-  currentPlayer: 1,
 }
 
 const useBattleStore = create<BattleState & BattleActions>()(
@@ -63,40 +47,47 @@ const useBattleStore = create<BattleState & BattleActions>()(
     immer((set, get) => ({
       ...initialState,
       // Actions
-      initGame: () => {
+      initPlayer: () => {
         set((state) => {
-          state.players[1].id = getRandomPokemonId()
-          state.players[2].id = getRandomPokemonId()
-          state.players[1].ready = false
-          state.players[2].ready = false
-          state.players[1].hp = 0
-          state.players[2].hp = 0
-          state.players[1].moves = []
-          state.players[2].moves = []
-          state.players[1].isAttacked = false
-          state.players[2].isAttacked = false
-          state.players[1].isDefeated = false
-          state.players[2].isDefeated = false
-          state.isPlayer1Turn = true
+          state.player = {
+            id: getRandomPokemonId(),
+            ready: false,
+            hp: 0,
+            moves: [],
+            isAttacked: false,
+            isDefeated: false,
+          }
+          state.opponent = null
+          state.isMyTurn = true
           state.gameLog = []
           state.winner = null
-          state.currentPlayer = 1
         })
       },
 
-      updatePlayer: (
-        playerId: number,
-        updates: Partial<Omit<Player, 'id'>>,
-      ) => {
+      setOpponent: (opponentData: Player) => {
         set((state) => {
-          Object.assign(state.players[playerId], updates)
+          state.opponent = opponentData
+        })
+      },
+
+      updatePlayer: (updates: Partial<Omit<Player, 'id'>>) => {
+        set((state) => {
+          if (state.player) {
+            Object.assign(state.player, updates)
+          }
+        })
+      },
+
+      updateOpponent: (updates: Partial<Omit<Player, 'id'>>) => {
+        set((state) => {
+          if (state.opponent) {
+            Object.assign(state.opponent, updates)
+          }
         })
       },
 
       handleMove: (move: Move) => {
-        const { players, isPlayer1Turn, currentPlayer } = get()
-        const player = players[currentPlayer]
-        const opponent = players[currentPlayer === 1 ? 2 : 1]
+        const { player, opponent, isMyTurn } = get()
 
         if (!player || !opponent) return
 
@@ -106,40 +97,45 @@ const useBattleStore = create<BattleState & BattleActions>()(
         const newHp = Math.max(0, opponent.hp - damage)
 
         set((state) => {
-          const opponentId = currentPlayer === 1 ? 2 : 1
-          state.players[opponentId].hp = newHp
-          state.players[opponentId].isAttacked = true
-          state.gameLog.push(
-            `${currentPlayer === 1 ? 'Player 1' : 'Player 2'} used ${move.name} for ${damage} damage!`,
-          )
-          state.isPlayer1Turn = !isPlayer1Turn
-          state.currentPlayer = isPlayer1Turn ? 2 : 1
+          if (state.opponent) {
+            state.opponent.hp = newHp
+            state.opponent.isAttacked = true
+          }
+          state.gameLog.push(`You used ${move.name} for ${damage} damage!`)
+          state.isMyTurn = false
           if (newHp <= 0) {
-            state.players[opponentId].isDefeated = true
-            state.winner = currentPlayer === 1 ? 'Player 1' : 'Player 2'
+            if (state.opponent) {
+              state.opponent.isDefeated = true
+            }
+            state.winner = 'You'
           }
         })
       },
 
-      isPlayerReady: (playerId: number) => {
-        const player = get().players[playerId]
-        return player.ready
-      },
+
 
       canStartGame: () => {
-        const { players } = get()
-        return players[1].ready && players[2].ready
+        const { player, opponent } = get()
+        return player?.ready && opponent?.ready
       },
 
-      clearAttackState: (playerId: number) => {
+      clearAttackState: (target: 'player' | 'opponent') => {
         set((state) => {
-          state.players[playerId].isAttacked = false
+          if (target === 'player' && state.player) {
+            state.player.isAttacked = false
+          } else if (target === 'opponent' && state.opponent) {
+            state.opponent.isAttacked = false
+          }
         })
       },
 
-      clearDefeatState: (playerId: number) => {
+      clearDefeatState: (target: 'player' | 'opponent') => {
         set((state) => {
-          state.players[playerId].isDefeated = false
+          if (target === 'player' && state.player) {
+            state.player.isDefeated = false
+          } else if (target === 'opponent' && state.opponent) {
+            state.opponent.isDefeated = false
+          }
         })
       },
     })),

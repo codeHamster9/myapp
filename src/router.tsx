@@ -1,5 +1,8 @@
+import { error } from 'console'
+
 import { createBrowserRouter, Outlet } from 'react-router'
 
+import ErrorBoundary from './components/ErrorBoundary'
 import Layout from './components/Layout/Layout'
 import Index from './pages/Index/index'
 import LobbyPage from './pages/LobbyPage'
@@ -33,6 +36,7 @@ export const appRoutes = [
       {
         path: '/lobby',
         element: <LobbyPage />,
+        error: ErrorBoundary,
       },
       {
         path: '/room/:roomCode',

@@ -5,25 +5,109 @@ import { Button } from '@/components/ui/button'
 import BattleLog from '@/features/pokemon/components/BattleLog'
 import PokemonCard from '@/features/pokemon/components/PokemonCard'
 import useBattleStore from '@/store/battleStore'
+import { roomService } from '@/services/roomService'
 
 export default function RoomPage() {
   const { roomCode } = useParams()
   const navigate = useNavigate()
   const [isConnected, setIsConnected] = useState(false)
-  const [playerCount, setPlayerCount] = useState(1)
-  const [playerId, setPlayerId] = useState(1)
+  const [playerCount, setPlayerCount] = useState(0)
+  const [playerId, setPlayerId] = useState('')
+  const [roomId, setRoomId] = useState('')
+  const [error, setError] = useState('')
+  const [player2Data, setPlayer2Data] = useState(null)
+  
+  const initPlayer = useBattleStore((state) => state.initPlayer)
+  const setOpponent = useBattleStore((state) => state.setOpponent)
 
-  const canStartGame = useBattleStore((state) => state.canStartGame())
-  const initGame = useBattleStore((state) => state.initGame)
+
 
   useEffect(() => {
-    // TODO: Connect to Supabase room
-    setIsConnected(true)
-    setPlayerId(Math.random() > 0.5 ? 1 : 2) // Temporary random assignment
+    const connectToRoom = async () => {
+      if (!roomCode) return
+      
+      try {
+        const userId = crypto.randomUUID()
+        setPlayerId(userId)
+        
+        const { room, player } = await roomService.joinRoom(roomCode, userId)
+        setRoomId(room.id)
+        
+        const players = await roomService.getRoomPlayers(room.id)
+        setPlayerCount(players.length)
+        console.log('Players in room:', players.length)
+        
+        // Initialize my player only
+        initPlayer()
+        
+        // If there's a second player, set as opponent
+        if (players.length === 2) {
+          const otherPlayer = players.find(p => p.player_id !== userId)
+          if (otherPlayer) {
+            setOpponent({
+              id: otherPlayer.pokemon_id,
+              hp: otherPlayer.hp || 0,
+              moves: otherPlayer.moves || [],
+              ready: otherPlayer.ready,
+              isAttacked: false,
+              isDefeated: false
+            })
+          }
+        }
+        
+        const subscription = await roomService.subscribeToRoom(room.id, onPlayerJoin)
+        
+        async function onPlayerJoin(payload) {
+          if (payload.table === 'room_players' && payload.eventType === 'INSERT') {
+            const players = await roomService.getRoomPlayers(room.id)
+            console.log('Player joined! Updated count:', players.length)
+            setPlayerCount(players.length)
+            
+            // When second player joins, set as opponent
+            if (players.length === 2) {
+              const otherPlayer = players.find(p => p.player_id !== userId)
+              if (otherPlayer) {
+                console.log('Opponent joined:', otherPlayer)
+                setOpponent({
+                  id: otherPlayer.pokemon_id,
+                  hp: otherPlayer.hp || 0,
+                  moves: otherPlayer.moves || [],
+                  ready: otherPlayer.ready,
+                  isAttacked: false,
+                  isDefeated: false
+                })
+              }
+            }
+          }
+        }
+        
+        setIsConnected(true)
+        
+        return () => {
+          subscription.unsubscribe()
+        }
+      } catch (err) {
+        setError('Failed to join room')
+        console.error(err)
+      }
+    }
+    
+    connectToRoom()
   }, [roomCode])
 
   const leaveRoom = () => {
     navigate('/')
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error}</p>
+          <Button onClick={() => navigate('/lobby')}>Back to Lobby</Button>
+        </div>
+      </div>
+    )
   }
 
   if (!isConnected) {
@@ -49,7 +133,7 @@ export default function RoomPage() {
             <p className="text-muted-foreground">Players: {playerCount}/2</p>
           </div>
           <div className="flex gap-3">
-            <Button onClick={initGame} variant="outline">
+            <Button onClick={initPlayer} variant="outline">
               New Game
             </Button>
             <Button onClick={leaveRoom} variant="destructive">
@@ -83,8 +167,8 @@ export default function RoomPage() {
           /* Battle Interface */
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <PokemonCard playerId={1} />
-              <PokemonCard playerId={2} />
+              <PokemonCard type="player" />
+              {playerCount >= 2 && <PokemonCard type="opponent" />}
             </div>
             <div className="lg:col-span-1">
               <BattleLog />
