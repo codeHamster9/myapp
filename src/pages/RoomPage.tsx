@@ -1,6 +1,6 @@
+import { useUser } from '@clerk/clerk-react'
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router'
-import { useUser } from '@clerk/clerk-react'
 
 import { Button } from '@/components/ui/button'
 import BattleLog from '@/features/pokemon/components/BattleLog'
@@ -14,7 +14,7 @@ export default function RoomPage() {
   const { isSignedIn, user } = useUser()
   const [isConnected, setIsConnected] = useState(false)
   const [playerCount, setPlayerCount] = useState(0)
-  const [roomId, setRoomId] = useState('')
+  // const [roomId, setRoomId] = useState('')
   const [error, setError] = useState('')
 
   const initPlayer = useBattleStore((state) => state.initPlayer)
@@ -30,11 +30,11 @@ export default function RoomPage() {
           setError('Please sign in to join room')
           return
         }
-        
+
         const userId = user.id
 
         const { room, player } = await roomService.joinRoom(roomCode, userId)
-        setRoomId(room.id)
+        // setRoomId(room.id)
 
         const players = await roomService.getRoomPlayers(room.id)
         setPlayerCount(players.length)
@@ -67,16 +67,25 @@ export default function RoomPage() {
           onPlayerJoin,
         )
 
-        async function onPlayerJoin(payload) {
+        async function onPlayerJoin(payload: any) {
           if (payload.table === 'room_players') {
             const players = await roomService.getRoomPlayers(room.id)
-            console.log('Room update! Player count:', players.length)
+            console.log(
+              'Room update! Player count:',
+              players.length,
+              'Event:',
+              payload.eventType,
+            )
             setPlayerCount(players.length)
 
             // Always sync opponent data when room updates
             const otherPlayer = players.find((p) => p.player_id !== userId)
             if (otherPlayer) {
-              console.log('Syncing opponent data:', otherPlayer)
+              console.log('Syncing opponent data:', {
+                id: otherPlayer.pokemon_id,
+                moves: otherPlayer.moves,
+                ready: otherPlayer.ready,
+              })
               setOpponent({
                 id: otherPlayer.pokemon_id,
                 hp: otherPlayer.hp || 0,

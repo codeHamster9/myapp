@@ -7,7 +7,7 @@ export const roomService = {
       .insert({ code, status: 'waiting' })
       .select()
       .single()
-    
+
     if (roomError) throw roomError
 
     // Add creator as first player with random Pokemon
@@ -21,7 +21,7 @@ export const roomService = {
       })
       .select()
       .single()
-    
+
     if (playerError) throw playerError
     return { room, player }
   },
@@ -34,7 +34,7 @@ export const roomService = {
         .select('*')
         .eq('code', roomCode)
         .single()
-      
+
       if (roomError) throw roomError
 
       // Check if player already in room
@@ -43,7 +43,7 @@ export const roomService = {
         .select('*')
         .eq('room_id', room.id)
         .eq('player_id', playerId)
-      
+
       if (existingPlayers && existingPlayers.length > 0) {
         console.log('Player already exists in room')
         return { room, player: existingPlayers[0] }
@@ -59,7 +59,7 @@ export const roomService = {
         })
         .select()
         .single()
-      
+
       if (error) {
         // If duplicate key error, try to fetch existing player
         if (error.code === '23505') {
@@ -69,14 +69,14 @@ export const roomService = {
             .eq('room_id', room.id)
             .eq('player_id', playerId)
             .single()
-          
+
           if (existingPlayer) {
             return { room, player: existingPlayer }
           }
         }
         throw error
       }
-      
+
       return { room, player: data }
     } catch (error) {
       console.error('Error in joinRoom:', error)
@@ -89,7 +89,7 @@ export const roomService = {
       .from('room_players')
       .select('*')
       .eq('room_id', roomId)
-    
+
     if (error) throw error
     return data
   },
@@ -101,7 +101,7 @@ export const roomService = {
       .eq('player_id', playerId)
       .select()
       .single()
-    
+
     if (error) throw error
     return data
   },
@@ -109,14 +109,26 @@ export const roomService = {
   async subscribeToRoom(roomId: string, callback: (payload: any) => void) {
     return supabase
       .channel(`room:${roomId}`)
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'room_players', filter: `room_id=eq.${roomId}` },
-        callback
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'room_players',
+          filter: `room_id=eq.${roomId}`,
+        },
+        callback,
       )
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'game_rooms', filter: `id=eq.${roomId}` },
-        callback
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'game_rooms',
+          filter: `id=eq.${roomId}`,
+        },
+        callback,
       )
       .subscribe()
-  }
+  },
 }

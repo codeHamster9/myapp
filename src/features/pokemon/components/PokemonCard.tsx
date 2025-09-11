@@ -20,27 +20,40 @@ interface Props {
   playerId?: string
 }
 
-function PokemonCard({ type, playerId }: Props) {
+function PokemonCard({ type }: Props) {
   const winner = useBattleStore((state) => state.winner)
   const isMyTurn = useBattleStore((state) => state.isMyTurn)
-  const player = useBattleStore((state) => type === 'player' ? state.player : state.opponent)
-  const otherPlayer = useBattleStore((state) => type === 'player' ? state.opponent : state.player)
+  const player = useBattleStore((state) =>
+    type === 'player' ? state.player : state.opponent,
+  )
+  const otherPlayer = useBattleStore((state) =>
+    type === 'player' ? state.opponent : state.player,
+  )
   const otherPlayerReady = otherPlayer?.ready || false
   const clearAttackState = useBattleStore((state) => state.clearAttackState)
   const clearDefeatState = useBattleStore((state) => state.clearDefeatState)
-  
+
   const isWinner = winner === (type === 'player' ? 'You' : 'Opponent')
   const isDefeated = player?.isDefeated || false
 
   // Calculate canStartGame locally
   const canStartGame = (player?.ready || false) && otherPlayerReady
-  const { data: pokemon, isLoading: pokemonLoading } = usePokemon(player?.id || 0)
+  const { data: pokemon, isLoading: pokemonLoading } = usePokemon(
+    player?.id || 0,
+  )
   const { movesWithData, isLoading: movesLoading } = useMoves(pokemon?.moves)
   const [availableMoves, setAvailableMoves] = useState<Move[]>([])
   const [defeatColor, setDefeatColor] = useState('#ff0000')
-  const defeatColors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffa500']
+  const defeatColors = [
+    '#ff0000',
+    '#00ff00',
+    '#0000ff',
+    '#ffff00',
+    '#ff00ff',
+    '#00ffff',
+    '#ffa500',
+  ]
   const updatePlayer = useBattleStore((state) => state.updatePlayer)
-  const updateOpponent = useBattleStore((state) => state.updateOpponent)
 
   const isLoading = pokemonLoading || movesLoading
   const maxMoves = Math.min(6, movesWithData.length)
@@ -72,11 +85,11 @@ function PokemonCard({ type, playerId }: Props) {
         setDefeatColor(defeatColors[colorIndex])
         colorIndex = (colorIndex + 1) % defeatColors.length
       }, 300)
-      
+
       const clearTimer = setTimeout(() => {
         clearDefeatState(type)
       }, 5000)
-      
+
       return () => {
         clearInterval(colorInterval)
         clearTimeout(clearTimer)
@@ -90,7 +103,9 @@ function PokemonCard({ type, playerId }: Props) {
     return (
       <div className="border rounded-lg bg-card shadow-md p-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-amber-500">{type === 'player' ? 'You' : 'Opponent'}</h2>
+          <h2 className="text-amber-500">
+            {type === 'player' ? 'You' : 'Opponent'}
+          </h2>
           <span className="px-2 py-1 rounded text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
             Loading...
           </span>
@@ -112,7 +127,12 @@ function PokemonCard({ type, playerId }: Props) {
   function handleDragEnd(event: any) {
     const { active, over } = event
 
-    if (over && active.id !== over.id && player && player.moves.length < maxMoves) {
+    if (
+      over &&
+      active.id !== over.id &&
+      player &&
+      player.moves.length < maxMoves
+    ) {
       const draggedMove = availableMoves.find((m) => m.name === active.id)
       if (!draggedMove) return
 
@@ -172,7 +192,14 @@ function PokemonCard({ type, playerId }: Props) {
           <PokemonSelectedMoves
             pokemonId={player?.id || 0}
             moves={player?.moves || []}
-            disabled={type !== 'player' || !isMyTurn || !canStartGame || !!winner || player?.isAttacked || isDefeated}
+            disabled={
+              type !== 'player' ||
+              !isMyTurn ||
+              !canStartGame ||
+              !!winner ||
+              player?.isAttacked ||
+              isDefeated
+            }
           />
         </div>
         <PokemonAvailableMoves
@@ -181,7 +208,9 @@ function PokemonCard({ type, playerId }: Props) {
           onClick={handleClick}
           onRandomSelectAll={handleRandomSelectAll}
           isVisible={
-            type === 'player' && availableMoves.length > 0 && (player?.moves.length || 0) < maxMoves
+            type === 'player' &&
+            availableMoves.length > 0 &&
+            (player?.moves.length || 0) < maxMoves
           }
         />
       </DndContext>

@@ -1,11 +1,11 @@
+import { useUser, SignInButton, UserButton } from '@clerk/clerk-react'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
-import { useUser, SignInButton, UserButton } from '@clerk/clerk-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { roomService } from '@/services/roomService'
 import { testConnection } from '@/lib/testSupabase'
+import { roomService } from '@/services/roomService'
 
 export default function LobbyPage() {
   const [roomCode, setRoomCode] = useState('')
@@ -19,7 +19,7 @@ export default function LobbyPage() {
 
   const createRoom = async () => {
     if (!isSignedIn || !user) return
-    
+
     try {
       const code = Math.random().toString(36).substring(2, 8).toUpperCase()
       await roomService.createRoom(code, user.id)
@@ -46,9 +46,7 @@ export default function LobbyPage() {
             Sign in to start battling!
           </p>
           <SignInButton mode="modal">
-            <Button className="w-full h-12 text-lg">
-              Sign In
-            </Button>
+            <Button className="w-full h-12 text-lg">Sign In</Button>
           </SignInButton>
         </div>
       </div>
@@ -59,9 +57,7 @@ export default function LobbyPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
       <div className="bg-card p-8 rounded-lg shadow-lg w-full max-w-md">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground">
-            Pokemon Battle
-          </h1>
+          <h1 className="text-3xl font-bold text-foreground">Pokemon Battle</h1>
           <UserButton />
         </div>
 

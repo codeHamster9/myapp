@@ -21,8 +21,8 @@ export default function PokemonPage() {
       <PlayersBanner />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <PokemonCard playerId={1} />
-        <PokemonCard playerId={2} />
+        <PokemonCard type="player" />
+        <PokemonCard type="opponent" />
       </div>
 
       <BattleLog />

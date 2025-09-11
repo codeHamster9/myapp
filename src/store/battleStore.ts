@@ -87,7 +87,7 @@ const useBattleStore = create<BattleState & BattleActions>()(
       },
 
       handleMove: (move: Move) => {
-        const { player, opponent, isMyTurn } = get()
+        const { player, opponent } = get()
 
         if (!player || !opponent) return
 
@@ -111,8 +111,6 @@ const useBattleStore = create<BattleState & BattleActions>()(
           }
         })
       },
-
-
 
       canStartGame: () => {
         const { player, opponent } = get()
