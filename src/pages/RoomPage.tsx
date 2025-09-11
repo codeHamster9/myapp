@@ -33,15 +33,14 @@ export default function RoomPage() {
 
         const userId = user.id
 
-        const { room, player } = await roomService.joinRoom(roomCode, userId)
-        // setRoomId(room.id)
+        const { room, game, player } = await roomService.joinRoom(roomCode, userId)
 
-        const players = await roomService.getRoomPlayers(room.id)
+        const players = await roomService.getGamePlayers(game.id)
         setPlayerCount(players.length)
-        console.log('Players in room:', players.length)
+        console.log('Players in game:', players.length)
 
         // Initialize my player with server Pokemon ID
-        const myPlayer = players.find((p) => p.player_id === userId)
+        const myPlayer = players.find((p) => p.user_id === userId)
         initPlayer()
         if (myPlayer && myPlayer.pokemon_id) {
           updatePlayer({ id: myPlayer.pokemon_id })
@@ -49,12 +48,12 @@ export default function RoomPage() {
 
         // If there's a second player, set as opponent
         if (players.length === 2) {
-          const otherPlayer = players.find((p) => p.player_id !== userId)
+          const otherPlayer = players.find((p) => p.user_id !== userId)
           if (otherPlayer) {
             setOpponent({
               id: otherPlayer.pokemon_id,
               hp: otherPlayer.hp || 0,
-              moves: otherPlayer.moves || [],
+              moves: [],
               ready: otherPlayer.ready,
               isAttacked: false,
               isDefeated: false,
@@ -62,34 +61,34 @@ export default function RoomPage() {
           }
         }
 
-        const subscription = await roomService.subscribeToRoom(
-          room.id,
+        const subscription = await roomService.subscribeToGame(
+          game.id,
           onPlayerJoin,
         )
 
         async function onPlayerJoin(payload: any) {
-          if (payload.table === 'room_players') {
-            const players = await roomService.getRoomPlayers(room.id)
+          if (payload.table === 'players') {
+            const players = await roomService.getGamePlayers(game.id)
             console.log(
-              'Room update! Player count:',
+              'Game update! Player count:',
               players.length,
               'Event:',
               payload.eventType,
             )
             setPlayerCount(players.length)
 
-            // Always sync opponent data when room updates
-            const otherPlayer = players.find((p) => p.player_id !== userId)
+            // Always sync opponent data when game updates
+            const otherPlayer = players.find((p) => p.user_id !== userId)
             if (otherPlayer) {
               console.log('Syncing opponent data:', {
                 id: otherPlayer.pokemon_id,
-                moves: otherPlayer.moves,
+                hp: otherPlayer.hp,
                 ready: otherPlayer.ready,
               })
               setOpponent({
                 id: otherPlayer.pokemon_id,
                 hp: otherPlayer.hp || 0,
-                moves: otherPlayer.moves || [],
+                moves: [],
                 ready: otherPlayer.ready,
                 isAttacked: false,
                 isDefeated: false,

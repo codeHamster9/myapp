@@ -8,87 +8,110 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 export type Database = {
   public: {
     Tables: {
-      game_rooms: {
+      users: {
+        Row: {
+          id: string
+          name: string | null
+          email: string | null
+          wins: number
+          losses: number
+          created_at: string
+        }
+        Insert: {
+          id: string
+          name?: string | null
+          email?: string | null
+          wins?: number
+          losses?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string | null
+          email?: string | null
+          wins?: number
+          losses?: number
+          created_at?: string
+        }
+      }
+      rooms: {
         Row: {
           id: string
           code: string
-          status: 'waiting' | 'playing' | 'finished'
-          current_player_id: string | null
+          status: 'waiting' | 'active' | 'finished'
+          player_ids: string[]
           created_at: string
         }
         Insert: {
           id?: string
           code: string
-          status?: 'waiting' | 'playing' | 'finished'
-          current_player_id?: string | null
+          status?: 'waiting' | 'active' | 'finished'
+          player_ids?: string[]
           created_at?: string
         }
         Update: {
           id?: string
           code?: string
-          status?: 'waiting' | 'playing' | 'finished'
-          current_player_id?: string | null
+          status?: 'waiting' | 'active' | 'finished'
+          player_ids?: string[]
           created_at?: string
         }
       }
-      room_players: {
+      games: {
         Row: {
           id: string
           room_id: string
-          player_id: string
+          status: 'setup' | 'playing' | 'finished'
+          current_player_id: string | null
+          winner_id: string | null
+          turn_number: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          room_id: string
+          status?: 'setup' | 'playing' | 'finished'
+          current_player_id?: string | null
+          winner_id?: string | null
+          turn_number?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          room_id?: string
+          status?: 'setup' | 'playing' | 'finished'
+          current_player_id?: string | null
+          winner_id?: string | null
+          turn_number?: number
+          created_at?: string
+        }
+      }
+      players: {
+        Row: {
+          id: string
+          game_id: string
+          user_id: string
           pokemon_id: number
           hp: number
-          moves: any[]
           ready: boolean
           created_at: string
         }
         Insert: {
           id?: string
-          room_id: string
-          player_id: string
+          game_id: string
+          user_id: string
           pokemon_id: number
           hp?: number
-          moves?: any[]
           ready?: boolean
           created_at?: string
         }
         Update: {
           id?: string
-          room_id?: string
-          player_id?: string
+          game_id?: string
+          user_id?: string
           pokemon_id?: number
           hp?: number
-          moves?: any[]
           ready?: boolean
-          created_at?: string
-        }
-      }
-      game_actions: {
-        Row: {
-          id: string
-          room_id: string
-          player_id: string
-          action_type: string
-          action_data: any
-          turn_number: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          room_id: string
-          player_id: string
-          action_type: string
-          action_data: any
-          turn_number: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          room_id?: string
-          player_id?: string
-          action_type?: string
-          action_data?: any
-          turn_number?: number
           created_at?: string
         }
       }

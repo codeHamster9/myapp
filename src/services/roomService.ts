@@ -2,93 +2,126 @@ import { supabase } from '@/lib/supabase'
 
 export const roomService = {
   async createRoom(code: string, userId: string) {
+    // Create room
     const { data: room, error: roomError } = await supabase
-      .from('game_rooms')
-      .insert({ code, status: 'waiting' })
+      .from('rooms')
+      .insert({ 
+        code, 
+        status: 'waiting',
+        player_ids: [userId]
+      })
       .select()
       .single()
 
     if (roomError) throw roomError
 
-    // Add creator as first player with random Pokemon
-    const pokemonId = Math.floor(Math.random() * 151) + 1
-    const { data: player, error: playerError } = await supabase
-      .from('room_players')
+    // Create game for this room
+    const { data: game, error: gameError } = await supabase
+      .from('games')
       .insert({
         room_id: room.id,
-        player_id: userId,
+        status: 'setup'
+      })
+      .select()
+      .single()
+
+    if (gameError) throw gameError
+
+    // Add creator as first player
+    const pokemonId = Math.floor(Math.random() * 151) + 1
+    const { data: player, error: playerError } = await supabase
+      .from('players')
+      .insert({
+        game_id: game.id,
+        user_id: userId,
         pokemon_id: pokemonId,
       })
       .select()
       .single()
 
     if (playerError) throw playerError
-    return { room, player }
+    return { room, game, player }
   },
 
-  async joinRoom(roomCode: string, playerId: string) {
+  async joinRoom(roomCode: string, userId: string) {
     try {
       // Check if room exists
       const { data: room, error: roomError } = await supabase
-        .from('game_rooms')
+        .from('rooms')
         .select('*')
         .eq('code', roomCode)
         .single()
 
       if (roomError) throw roomError
 
-      // Check if player already in room
-      const { data: existingPlayers } = await supabase
-        .from('room_players')
-        .select('*')
-        .eq('room_id', room.id)
-        .eq('player_id', playerId)
+      // Check if user already in room
+      if (room.player_ids.includes(userId)) {
+        // Get current game and player
+        const { data: game } = await supabase
+          .from('games')
+          .select('*')
+          .eq('room_id', room.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
 
-      if (existingPlayers && existingPlayers.length > 0) {
-        console.log('Player already exists in room')
-        return { room, player: existingPlayers[0] }
+        const { data: player } = await supabase
+          .from('players')
+          .select('*')
+          .eq('game_id', game?.id)
+          .eq('user_id', userId)
+          .single()
+
+        return { room, game, player }
       }
 
-      // Add player to room
-      const { data, error } = await supabase
-        .from('room_players')
+      // Add user to room
+      const updatedPlayerIds = [...room.player_ids, userId]
+      const { error: updateError } = await supabase
+        .from('rooms')
+        .update({ 
+          player_ids: updatedPlayerIds,
+          status: updatedPlayerIds.length === 2 ? 'active' : 'waiting'
+        })
+        .eq('id', room.id)
+
+      if (updateError) throw updateError
+
+      // Get current game
+      const { data: game } = await supabase
+        .from('games')
+        .select('*')
+        .eq('room_id', room.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      // Add player to game
+      const pokemonId = Math.floor(Math.random() * 151) + 1
+      const { data: player, error: playerError } = await supabase
+        .from('players')
         .insert({
-          room_id: room.id,
-          player_id: playerId,
-          pokemon_id: Math.floor(Math.random() * 151) + 1,
+          game_id: game?.id,
+          user_id: userId,
+          pokemon_id: pokemonId,
         })
         .select()
         .single()
 
-      if (error) {
-        // If duplicate key error, try to fetch existing player
-        if (error.code === '23505') {
-          const { data: existingPlayer } = await supabase
-            .from('room_players')
-            .select('*')
-            .eq('room_id', room.id)
-            .eq('player_id', playerId)
-            .single()
+      if (playerError) throw playerError
 
-          if (existingPlayer) {
-            return { room, player: existingPlayer }
-          }
-        }
-        throw error
-      }
-
-      return { room, player: data }
+      return { room: { ...room, player_ids: updatedPlayerIds }, game, player }
     } catch (error) {
       console.error('Error in joinRoom:', error)
       throw error
     }
   },
 
-  async getRoomPlayers(roomId: string) {
+  async getGamePlayers(gameId: string) {
     const { data, error } = await supabase
-      .from('room_players')
+      .from('players')
       .select('*')
-      .eq('room_id', roomId)
+      .eq('game_id', gameId)
 
     if (error) throw error
     return data
@@ -96,9 +129,9 @@ export const roomService = {
 
   async updatePlayer(playerId: string, updates: any) {
     const { data, error } = await supabase
-      .from('room_players')
+      .from('players')
       .update(updates)
-      .eq('player_id', playerId)
+      .eq('id', playerId)
       .select()
       .single()
 
@@ -106,16 +139,16 @@ export const roomService = {
     return data
   },
 
-  async subscribeToRoom(roomId: string, callback: (payload: any) => void) {
+  async subscribeToGame(gameId: string, callback: (payload: any) => void) {
     return supabase
-      .channel(`room:${roomId}`)
+      .channel(`game:${gameId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'room_players',
-          filter: `room_id=eq.${roomId}`,
+          table: 'players',
+          filter: `game_id=eq.${gameId}`,
         },
         callback,
       )
@@ -124,8 +157,8 @@ export const roomService = {
         {
           event: '*',
           schema: 'public',
-          table: 'game_rooms',
-          filter: `id=eq.${roomId}`,
+          table: 'games',
+          filter: `id=eq.${gameId}`,
         },
         callback,
       )
