@@ -19,6 +19,7 @@ export default function RoomPage() {
 
   const initPlayer = useBattleStore((state) => state.initPlayer)
   const setOpponent = useBattleStore((state) => state.setOpponent)
+  const updatePlayer = useBattleStore((state) => state.updatePlayer)
 
   useEffect(() => {
     const connectToRoom = async () => {
@@ -39,8 +40,12 @@ export default function RoomPage() {
         setPlayerCount(players.length)
         console.log('Players in room:', players.length)
 
-        // Initialize my player only
+        // Initialize my player with server Pokemon ID
+        const myPlayer = players.find((p) => p.player_id === userId)
         initPlayer()
+        if (myPlayer && myPlayer.pokemon_id) {
+          updatePlayer({ id: myPlayer.pokemon_id })
+        }
 
         // If there's a second player, set as opponent
         if (players.length === 2) {
