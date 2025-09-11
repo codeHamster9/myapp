@@ -35,7 +35,7 @@ export function PokemonAvailableMoves({
             onClick={onRandomSelectAll}
             className="w-full mb-3 px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded transition-colors font-medium"
           >
-            Random Select All
+            Random
           </button>
           <div className="grid grid-cols-2 gap-2 gap-y-2">
             {moves.map((move, index) => (
