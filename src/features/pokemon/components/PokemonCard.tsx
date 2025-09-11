@@ -17,9 +17,10 @@ import { PokemonSelectedMoves } from './PokemonSelectedMoves'
 
 interface Props {
   type: 'player' | 'opponent'
+  playerId?: string
 }
 
-function PokemonCard({ type }: Props) {
+function PokemonCard({ type, playerId }: Props) {
   const winner = useBattleStore((state) => state.winner)
   const isMyTurn = useBattleStore((state) => state.isMyTurn)
   const player = useBattleStore((state) => type === 'player' ? state.player : state.opponent)
@@ -47,7 +48,7 @@ function PokemonCard({ type }: Props) {
   useEffect(() => {
     if (movesWithData.length > maxMoves) {
       setAvailableMoves(movesWithData)
-      if (type === 'player') {
+      if (type === 'player' && player) {
         updatePlayer({
           hp: pokemon?.stats[0].base_stat || 0,
         })

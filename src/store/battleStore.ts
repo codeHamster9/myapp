@@ -64,7 +64,7 @@ const useBattleStore = create<BattleState & BattleActions>()(
         })
       },
 
-      setOpponent: (opponentData: Player) => {
+      setOpponent: (opponentData: Player | null) => {
         set((state) => {
           state.opponent = opponentData
         })
