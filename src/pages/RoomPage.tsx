@@ -44,7 +44,7 @@ export default function RoomPage() {
         // Initialize my player with server Pokemon ID
         const myPlayer = players.find((p) => p.user_id === userId)
         initPlayer()
-        if (myPlayer && myPlayer.pokemon_id) {
+        if (myPlayer) {
           updatePlayer({ id: myPlayer.pokemon_id })
         }
 
@@ -54,24 +54,26 @@ export default function RoomPage() {
           if (otherPlayer) {
             setOpponent({
               id: otherPlayer.pokemon_id,
-              hp: otherPlayer.hp || 0,
+              hp: 0, // Will be set when Pokemon loads
               moves: [],
-              ready: otherPlayer.ready,
+              ready: false, // Client-side ready state
               isAttacked: false,
               isDefeated: false,
             })
           }
         }
 
+        console.log('Setting up subscription for game:', game.id)
         const subscription = await roomService.subscribeToGame(
           game.id,
           onPlayerJoin,
         )
+        console.log('Subscription created:', subscription)
 
         async function onPlayerJoin(payload: any) {
-          console.log('Real-time event received:', payload)
+          console.log('🔥 Real-time event received:', payload)
           
-          if (payload.table === 'players' || payload.table === 'games') {
+          if (payload.table === 'broadcast' && payload.eventType === 'player_joined') {
             const players = await roomService.getGamePlayers(game.id)
             console.log(
               'Game update! Player count:',
@@ -83,25 +85,17 @@ export default function RoomPage() {
             )
             setPlayerCount(players.length)
 
-            // Always sync opponent data when game updates
-            const otherPlayer = players.find((p) => p.user_id !== userId)
-            if (otherPlayer) {
-              console.log('Syncing opponent data:', {
-                id: otherPlayer.pokemon_id,
-                hp: otherPlayer.hp,
-                ready: otherPlayer.ready,
-              })
+            // Sync opponent data from broadcast
+            if (payload.payload.userId !== userId) {
+              console.log('Setting opponent from broadcast:', payload.payload)
               setOpponent({
-                id: otherPlayer.pokemon_id,
-                hp: otherPlayer.hp || 0,
+                id: payload.payload.pokemonId,
+                hp: 0,
                 moves: [],
-                ready: otherPlayer.ready,
+                ready: false,
                 isAttacked: false,
                 isDefeated: false,
               })
-            } else {
-              // Clear opponent if they left
-              setOpponent(null)
             }
           }
         }

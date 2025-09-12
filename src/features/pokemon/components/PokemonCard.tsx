@@ -59,7 +59,7 @@ function PokemonCard({ type }: Props) {
   const maxMoves = Math.min(6, movesWithData.length)
 
   useEffect(() => {
-    if (movesWithData.length > maxMoves) {
+    if (movesWithData.length > 0) {
       setAvailableMoves(movesWithData)
       if (type === 'player' && player) {
         updatePlayer({

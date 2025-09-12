@@ -39,27 +39,18 @@ export type Database = {
           id: string
           code: string
           status: 'waiting' | 'in_progress' | 'ended'
-          current_player_id: string | null
-          winner_id: string | null
-          turn_number: number
           created_at: string
         }
         Insert: {
           id?: string
           code: string
           status?: 'waiting' | 'in_progress' | 'ended'
-          current_player_id?: string | null
-          winner_id?: string | null
-          turn_number?: number
           created_at?: string
         }
         Update: {
           id?: string
           code?: string
           status?: 'waiting' | 'in_progress' | 'ended'
-          current_player_id?: string | null
-          winner_id?: string | null
-          turn_number?: number
           created_at?: string
         }
       }
@@ -69,8 +60,6 @@ export type Database = {
           game_id: string
           user_id: string
           pokemon_id: number
-          hp: number
-          ready: boolean
           created_at: string
         }
         Insert: {
@@ -78,8 +67,6 @@ export type Database = {
           game_id: string
           user_id: string
           pokemon_id: number
-          hp?: number
-          ready?: boolean
           created_at?: string
         }
         Update: {
@@ -87,8 +74,6 @@ export type Database = {
           game_id?: string
           user_id?: string
           pokemon_id?: number
-          hp?: number
-          ready?: boolean
           created_at?: string
         }
       }

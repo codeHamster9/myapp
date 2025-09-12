@@ -2,19 +2,16 @@ import { supabase } from '@/lib/supabase'
 
 export const roomService = {
   async createRoom(code: string, userId: string) {
-    // Create game with room code
+    // Create game
     const { data: game, error: gameError } = await supabase
       .from('games')
-      .insert({
-        code,
-        status: 'waiting',
-      })
+      .insert({ code, status: 'waiting' })
       .select()
       .single()
 
     if (gameError) throw gameError
 
-    // Add creator as first player
+    // Add creator as player
     const pokemonId = Math.floor(Math.random() * 151) + 1
     const { data: player, error: playerError } = await supabase
       .from('players')
@@ -31,60 +28,55 @@ export const roomService = {
   },
 
   async joinRoom(roomCode: string, userId: string) {
-    try {
-      console.log('Joining room:', roomCode, 'User:', userId)
+    // Find game
+    const { data: game, error: gameError } = await supabase
+      .from('games')
+      .select('*')
+      .eq('code', roomCode)
+      .single()
 
-      // Check if game exists
-      const { data: game, error: gameError } = await supabase
-        .from('games')
-        .select('*')
-        .eq('code', roomCode)
-        .single()
+    if (gameError) throw gameError
 
-      if (gameError) throw gameError
-      console.log('Found game:', game)
-
-      // Check if user already has a player in this game
-      const { data: existingPlayer } = await supabase
-        .from('players')
-        .select('*')
-        .eq('game_id', game.id)
-        .eq('user_id', userId)
-        .single()
-
-      if (existingPlayer) {
-        console.log('Player already exists in game')
-        return { game, player: existingPlayer }
-      }
-
-      // Add player to game
-      const pokemonId = Math.floor(Math.random() * 151) + 1
-      const { data: player, error: playerError } = await supabase
-        .from('players')
-        .insert({
+    // Add or update player (UPSERT)
+    const pokemonId = Math.floor(Math.random() * 151) + 1
+    const { data: player, error: playerError } = await supabase
+      .from('players')
+      .upsert(
+        {
           game_id: game.id,
           user_id: userId,
           pokemon_id: pokemonId,
-        })
-        .select()
-        .single()
+        },
+        {
+          onConflict: 'game_id,user_id',
+        },
+      )
+      .select()
+      .single()
 
-      if (playerError) throw playerError
+    if (playerError) throw playerError
 
-      // Update game status if second player joined
-      const players = await this.getGamePlayers(game.id)
-      if (players.length === 2) {
-        await supabase
-          .from('games')
-          .update({ status: 'in_progress' })
-          .eq('id', game.id)
-      }
-
-      return { game, player }
-    } catch (error) {
-      console.error('Error in joinRoom:', error)
-      throw error
+    // Start game if 2 players
+    const players = await this.getGamePlayers(game.id)
+    if (players.length === 2) {
+      await supabase
+        .from('games')
+        .update({ status: 'in_progress' })
+        .eq('id', game.id)
     }
+
+    // Broadcast player joined event
+    await supabase.channel(`game-${game.id}`).send({
+      type: 'broadcast',
+      event: 'player_joined',
+      payload: {
+        userId,
+        pokemonId,
+        playerCount: players.length,
+      },
+    })
+
+    return { game, player }
   },
 
   async getGamePlayers(gameId: string) {
@@ -97,59 +89,35 @@ export const roomService = {
     return data
   },
 
-  async updatePlayer(playerId: string, updates: any) {
-    const { data, error } = await supabase
-      .from('players')
-      .update(updates)
-      .eq('id', playerId)
-      .select()
-      .single()
-
-    if (error) throw error
-    return data
-  },
-
   async leaveRoom(userId: string, gameId: string) {
-    // Remove player from current game
-    // const { error } = await supabase
-    //   .from('players')
-    //   .delete()
-    //   .eq('game_id', gameId)
-    //   .eq('user_id', userId)
+    // Remove player
+    await supabase
+      .from('players')
+      .delete()
+      .eq('game_id', gameId)
+      .eq('user_id', userId)
 
-    // if (error) throw error
-
-    const { error: gamesError } = await supabase
-      .from('games')
-      .update({ status: 'ended' })
-      .eq('id', gameId)
-
-    if (gamesError) throw gamesError
+    // End game
+    await supabase.from('games').update({ status: 'ended' }).eq('id', gameId)
   },
 
   async subscribeToGame(gameId: string, callback: (payload: any) => void) {
-    return supabase
-      .channel(`game:${gameId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'players',
-          filter: `game_id=eq.${gameId}`,
+    console.log('🔔 Creating subscription for game:', gameId)
+
+    const channel = supabase
+      .channel(`game-${gameId}`, {
+        config: {
+          broadcast: { self: false },
         },
-        callback,
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'games',
-          filter: `id=eq.${gameId}`,
-        },
-        callback,
-      )
-      .subscribe()
+      })
+      .on('broadcast', { event: 'player_joined' }, (payload) => {
+        console.log('🔥 Player joined broadcast:', payload)
+        callback({ ...payload, table: 'broadcast', eventType: 'player_joined' })
+      })
+      .subscribe((status) => {
+        console.log('🔔 Subscription status:', status)
+      })
+
+    return channel
   },
 }
