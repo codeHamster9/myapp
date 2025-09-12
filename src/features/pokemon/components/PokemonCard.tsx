@@ -69,11 +69,13 @@ function PokemonCard({ type, gameId, userId }: Props) {
 
       setAvailableMoves(movesWithData)
 
-      updatePlayer({
-        hp: pokemon?.stats[0].base_stat || 0,
-      })
+      if (type === 'player' && player) {
+        updatePlayer({
+          hp: pokemon?.stats[0].base_stat || 0,
+        })
+      // Don't set opponent HP here - it should be set when opponent is created
     }
-  }, [movesWithData, type, pokemon?.stats, updatePlayer])
+  }, [movesWithData, type, pokemon?.stats, updatePlayer, player])
 
   useEffect(() => {
     if (player?.isAttacked) {

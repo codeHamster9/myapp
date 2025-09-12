@@ -36,12 +36,8 @@ export default function RoomPage() {
         }
 
         const userId = user.id
-
         const { game, isPlayer1 } = await roomService.joinRoom(roomCode, userId)
-        console.log('Join result:', { game, isPlayer1 })
         setGameId(game.id)
-        console.log('Set gameId:', game.id)
-
         // Initialize my player with server Pokemon ID
         const myPokemonId = isPlayer1
           ? game.player1_pokemon_id
@@ -56,14 +52,19 @@ export default function RoomPage() {
           ? game.player2_pokemon_id
           : game.player1_pokemon_id
         if (opponentPokemonId) {
-          setOpponent({
-            id: opponentPokemonId,
-            hp: 0,
-            moves: [],
-            ready: false,
-            isAttacked: false,
-            isDefeated: false,
-          })
+          // Fetch opponent Pokemon to get max HP
+          fetch(`https://pokeapi.co/api/v2/pokemon/${opponentPokemonId}`)
+            .then(async (res) => res.json())
+            .then((pokemonData) => {
+              setOpponent({
+                id: opponentPokemonId,
+                hp: pokemonData.stats[0].base_stat, // Set proper max HP
+                moves: [],
+                ready: false,
+                isAttacked: false,
+                isDefeated: false,
+              })
+            })
         }
 
         console.log('Setting up subscription for game:', game.id)
@@ -81,18 +82,22 @@ export default function RoomPage() {
                 console.log('Setting opponent from broadcast:', payload.payload)
                 // Get opponent's Pokemon data to set proper HP
                 const opponentPokemonId = payload.payload.pokemonId
-                setOpponent({
-                  id: opponentPokemonId,
-                  hp: 0, // Will be updated when opponent's Pokemon loads
-                  moves: [],
-                  ready: false,
-                  isAttacked: false,
-                  isDefeated: false,
-                })
+                // Fetch opponent Pokemon to get max HP
+                fetch(`https://pokeapi.co/api/v2/pokemon/${opponentPokemonId}`)
+                  .then(async (res) => res.json())
+                  .then((pokemonData) => {
+                    setOpponent({
+                      id: opponentPokemonId,
+                      hp: pokemonData.stats[0].base_stat, // Set proper max HP
+                      moves: [],
+                      ready: false,
+                      isAttacked: false,
+                      isDefeated: false,
+                    })
+                  })
               }
             } else if (payload.eventType === 'player_left') {
               if (payload.payload.userId !== userId) {
-                console.log('Opponent left:', payload.payload.userId)
                 setOpponent(null)
               }
             } else if (payload.eventType === 'move_selected') {
@@ -100,55 +105,43 @@ export default function RoomPage() {
                 console.log('Opponent selected move:', payload.payload.move)
                 const currentOpponent = useBattleStore.getState().opponent
                 if (currentOpponent) {
-                  const newMoves = [...currentOpponent.moves, payload.payload.move]
+                  const newMoves = [
+                    ...currentOpponent.moves,
+                    payload.payload.move,
+                  ]
                   setOpponent({
                     ...currentOpponent,
                     moves: newMoves,
-                    ready: newMoves.length >= 6
+                    ready: newMoves.length >= 6,
                   })
                 }
               }
             } else if (payload.eventType === 'attack') {
               if (payload.payload.attackerId !== userId) {
-                console.log('Opponent attacked:', payload.payload)
                 const currentPlayer = useBattleStore.getState().player
+
                 if (currentPlayer) {
-                  const newHp = Math.max(0, currentPlayer.hp - payload.payload.damage)
+                  const newHp = Math.max(
+                    0,
+                    currentPlayer.hp - payload.payload.damage,
+                  )
                   const isDefeated = newHp <= 0
-                  
+
                   updatePlayer({
                     hp: newHp,
                     isAttacked: true,
-                    isDefeated
+                    isDefeated,
                   })
-                  
+
                   // Add to game log
                   const gameLog = useBattleStore.getState().gameLog
+                  const logMessage = `Opponent used ${payload.payload.move.name} for ${payload.payload.damage} damage!`
+                  console.log('📡 REMOTE: Adding attack log:', logMessage)
                   useBattleStore.setState({
-                    gameLog: [...gameLog, `Opponent used ${payload.payload.move.name} for ${payload.payload.damage} damage!`],
+                    gameLog: [...gameLog, logMessage],
                     isMyTurn: true,
-                    winner: isDefeated ? 'Opponent' : null
+                    winner: isDefeated ? 'Opponent' : null,
                   })
-                  
-                  // Broadcast HP update back to attacker
-                  roomService.broadcastHpUpdate(gameId, userId, newHp, isDefeated)
-                }
-              }
-            } else if (payload.eventType === 'hp_update') {
-              if (payload.payload.userId !== userId) {
-                console.log('Opponent HP updated:', payload.payload)
-                const currentOpponent = useBattleStore.getState().opponent
-                if (currentOpponent) {
-                  setOpponent({
-                    ...currentOpponent,
-                    hp: payload.payload.hp,
-                    isDefeated: payload.payload.isDefeated
-                  })
-                  
-                  // Update winner if opponent is defeated
-                  if (payload.payload.isDefeated) {
-                    useBattleStore.setState({ winner: 'You' })
-                  }
                 }
               }
             }
@@ -246,8 +239,13 @@ export default function RoomPage() {
           /* Battle Interface */
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <PokemonCard type="player" playerId={user?.id} gameId={gameId} userId={user?.id} />
-              {playerCount >= 2 && <PokemonCard type="opponent" gameId={gameId} />}
+              <PokemonCard
+                type="player"
+                playerId={user?.id}
+                gameId={gameId}
+                userId={user?.id}
+              />
+              <PokemonCard type="opponent" gameId={gameId} />
             </div>
             <div className="lg:col-span-1">
               <BattleLog />

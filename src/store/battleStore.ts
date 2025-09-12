@@ -95,7 +95,7 @@ const useBattleStore = create<BattleState & BattleActions>()(
         const maxDamage = move.power || 40
         const damage = Math.floor(Math.random() * maxDamage)
 
-        // Only update local state (attacker's view)
+        // Only update local state (attacker's view) - no opponent damage here
         set((state) => {
           state.gameLog.push(`You used ${move.name}!`)
           state.isMyTurn = false
