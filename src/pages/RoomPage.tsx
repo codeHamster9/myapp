@@ -108,6 +108,49 @@ export default function RoomPage() {
                   })
                 }
               }
+            } else if (payload.eventType === 'attack') {
+              if (payload.payload.attackerId !== userId) {
+                console.log('Opponent attacked:', payload.payload)
+                const currentPlayer = useBattleStore.getState().player
+                if (currentPlayer) {
+                  const newHp = Math.max(0, currentPlayer.hp - payload.payload.damage)
+                  const isDefeated = newHp <= 0
+                  
+                  updatePlayer({
+                    hp: newHp,
+                    isAttacked: true,
+                    isDefeated
+                  })
+                  
+                  // Add to game log
+                  const gameLog = useBattleStore.getState().gameLog
+                  useBattleStore.setState({
+                    gameLog: [...gameLog, `Opponent used ${payload.payload.move.name} for ${payload.payload.damage} damage!`],
+                    isMyTurn: true,
+                    winner: isDefeated ? 'Opponent' : null
+                  })
+                  
+                  // Broadcast HP update back to attacker
+                  roomService.broadcastHpUpdate(gameId, userId, newHp, isDefeated)
+                }
+              }
+            } else if (payload.eventType === 'hp_update') {
+              if (payload.payload.userId !== userId) {
+                console.log('Opponent HP updated:', payload.payload)
+                const currentOpponent = useBattleStore.getState().opponent
+                if (currentOpponent) {
+                  setOpponent({
+                    ...currentOpponent,
+                    hp: payload.payload.hp,
+                    isDefeated: payload.payload.isDefeated
+                  })
+                  
+                  // Update winner if opponent is defeated
+                  if (payload.payload.isDefeated) {
+                    useBattleStore.setState({ winner: 'You' })
+                  }
+                }
+              }
             }
           }
         }

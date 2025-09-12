@@ -7,18 +7,23 @@ type Props = {
   pokemonId: number
   moves: Move[]
   disabled: boolean
+  gameId?: string
+  userId?: string
 }
 
 export function PokemonSelectedMoves({
   pokemonId,
   moves,
   disabled,
+  gameId,
+  userId,
 }: Props) {
   const handleMove = useBattleStore((state) => state.handleMove)
 
   function handleMoveClick(move: Move) {
     if (disabled) return
-    handleMove(move)
+    console.log('🎯 Attack initiated:', { move: move.name, gameId, userId })
+    handleMove(move, gameId, userId)
   }
 
   return (

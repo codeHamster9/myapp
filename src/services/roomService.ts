@@ -104,13 +104,45 @@ export const roomService = {
   },
 
   async broadcastMoveSelected(gameId: string, userId: string, move: any) {
-    console.log('📡 Sending move_selected broadcast:', { gameId, userId, move: move.name })
+    console.log('📡 Sending move_selected broadcast:', {
+      gameId,
+      userId,
+      move: move.name,
+    })
     const result = await supabase.channel(`game-${gameId}`).send({
       type: 'broadcast',
       event: 'move_selected',
       payload: { userId, move },
     })
     console.log('📡 Broadcast result:', result)
+  },
+
+  async broadcastAttack(
+    gameId: string,
+    attackerId: string,
+    move: any,
+    damage: number,
+  ) {
+    console.log('⚔️ Sending attack broadcast:', {
+      gameId,
+      attackerId,
+      move: move.name,
+      damage,
+    })
+    await supabase.channel(`game-${gameId}`).send({
+      type: 'broadcast',
+      event: 'attack',
+      payload: { attackerId, move, damage },
+    })
+  },
+
+  async broadcastHpUpdate(gameId: string, userId: string, hp: number, isDefeated: boolean) {
+    console.log('💖 Sending HP update broadcast:', { gameId, userId, hp, isDefeated })
+    await supabase.channel(`game-${gameId}`).send({
+      type: 'broadcast',
+      event: 'hp_update',
+      payload: { userId, hp, isDefeated }
+    })
   },
 
   async subscribeToGame(gameId: string, callback: (payload: any) => void) {
@@ -133,6 +165,14 @@ export const roomService = {
       .on('broadcast', { event: 'move_selected' }, (payload) => {
         console.log('🔥 Move selected broadcast:', payload)
         callback({ ...payload, table: 'broadcast', eventType: 'move_selected' })
+      })
+      .on('broadcast', { event: 'attack' }, (payload) => {
+        console.log('⚔️ Attack broadcast:', payload)
+        callback({ ...payload, table: 'broadcast', eventType: 'attack' })
+      })
+      .on('broadcast', { event: 'hp_update' }, (payload) => {
+        console.log('💖 HP update broadcast:', payload)
+        callback({ ...payload, table: 'broadcast', eventType: 'hp_update' })
       })
       .subscribe((status) => {
         console.log('🔔 Subscription status:', status)

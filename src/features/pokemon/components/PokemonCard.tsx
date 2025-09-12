@@ -68,11 +68,10 @@ function PokemonCard({ type, gameId, userId }: Props) {
       console.log('move set', pokemon?.id, 'moves:', movesWithData.length)
 
       setAvailableMoves(movesWithData)
-      if (type === 'player' && player) {
-        updatePlayer({
-          hp: pokemon?.stats[0].base_stat || 0,
-        })
-      }
+
+      updatePlayer({
+        hp: pokemon?.stats[0].base_stat || 0,
+      })
     }
   }, [movesWithData, type, pokemon?.stats, updatePlayer])
 
@@ -155,10 +154,20 @@ function PokemonCard({ type, gameId, userId }: Props) {
   }
 
   function handleClick(move: Move) {
-    console.log('💆 Move clicked:', move.name, { player: !!player, movesLength: player?.moves.length, maxMoves, type })
-    
+    console.log('💆 Move clicked:', move.name, {
+      player: !!player,
+      movesLength: player?.moves.length,
+      maxMoves,
+      type,
+    })
+
     if (!player || player.moves.length >= maxMoves || type !== 'player') {
-      console.log('❌ Move click blocked:', { hasPlayer: !!player, movesLength: player?.moves.length, maxMoves, type })
+      console.log('❌ Move click blocked:', {
+        hasPlayer: !!player,
+        movesLength: player?.moves.length,
+        maxMoves,
+        type,
+      })
       return
     }
 
@@ -168,10 +177,17 @@ function PokemonCard({ type, gameId, userId }: Props) {
 
     // Broadcast move selected event
     if (gameId && userId) {
-      console.log('🚀 Broadcasting move selection:', { gameId, userId, move: move.name })
+      console.log('🚀 Broadcasting move selection:', {
+        gameId,
+        userId,
+        move: move.name,
+      })
       roomService.broadcastMoveSelected(gameId, userId, move)
     } else {
-      console.log('❌ Missing gameId or userId for broadcast:', { gameId, userId })
+      console.log('❌ Missing gameId or userId for broadcast:', {
+        gameId,
+        userId,
+      })
     }
 
     if (moves.length === maxMoves) {
@@ -194,7 +210,9 @@ function PokemonCard({ type, gameId, userId }: Props) {
 
       // Broadcast all selected moves
       if (gameId && userId) {
-        randomMoves.forEach(move => roomService.broadcastMoveSelected(gameId, userId, move))
+        randomMoves.forEach(async (move) =>
+          roomService.broadcastMoveSelected(gameId, userId, move),
+        )
       }
     }
   }
@@ -218,12 +236,15 @@ function PokemonCard({ type, gameId, userId }: Props) {
             pokemonId={player?.id || 0}
             moves={player?.moves || []}
             disabled={
+              type !== 'player' ||
               !isMyTurn ||
               !canStartGame ||
               !!winner ||
               player?.isAttacked ||
               isDefeated
             }
+            gameId={gameId}
+            userId={userId}
           />
         </div>
         <PokemonAvailableMoves

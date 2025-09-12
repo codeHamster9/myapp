@@ -86,7 +86,7 @@ const useBattleStore = create<BattleState & BattleActions>()(
         })
       },
 
-      handleMove: (move: Move) => {
+      handleMove: (move: Move, gameId?: string, userId?: string) => {
         const { player, opponent } = get()
 
         if (!player || !opponent) return
@@ -94,22 +94,19 @@ const useBattleStore = create<BattleState & BattleActions>()(
         // Calculate damage between 0 and maxDamage (move power)
         const maxDamage = move.power || 40
         const damage = Math.floor(Math.random() * maxDamage)
-        const newHp = Math.max(0, opponent.hp - damage)
 
+        // Only update local state (attacker's view)
         set((state) => {
-          if (state.opponent) {
-            state.opponent.hp = newHp
-            state.opponent.isAttacked = true
-          }
-          state.gameLog.push(`You used ${move.name} for ${damage} damage!`)
+          state.gameLog.push(`You used ${move.name}!`)
           state.isMyTurn = false
-          if (newHp <= 0) {
-            if (state.opponent) {
-              state.opponent.isDefeated = true
-            }
-            state.winner = 'You'
-          }
         })
+
+        // Broadcast attack to opponent (they will handle the damage)
+        if (gameId && userId) {
+          import('@/services/roomService').then(({ roomService }) => {
+            roomService.broadcastAttack(gameId, userId, move, damage)
+          })
+        }
       },
 
       canStartGame: () => {
