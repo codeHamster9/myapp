@@ -94,28 +94,32 @@ export default function RoomPage() {
           },
           onMoveSelected: ({ payload }) => {
             if (payload.userId !== userId) {
-              console.log('Opponent selected move:', payload.move)
               const currentOpponent = useBattleStore.getState().opponent
               if (currentOpponent) {
-                const newMoves = [...currentOpponent.moves, payload.move]
-                setOpponent({
-                  ...currentOpponent,
-                  moves: newMoves,
-                  ready: newMoves.length >= 6,
-                })
+                const moveExists = currentOpponent.moves.some(
+                  (m) => m.name === payload.move.name,
+                )
+                if (!moveExists) {
+                  const newMoves = [...currentOpponent.moves, payload.move]
+                  setOpponent({
+                    ...currentOpponent,
+                    moves: newMoves,
+                    ready: newMoves.length >= 6,
+                  })
+                }
               }
             }
           },
           onAttack: (payload) => {
             if (payload.payload.attackerId !== userId) {
-              console.log('Opponent attacked:', payload.payload)
               const currentPlayer = useBattleStore.getState().player
+              const gameLog = useBattleStore.getState().gameLog
+              const logMessage = `Opponent used ${payload.payload.move.name} for ${payload.payload.damage} damage!`
 
-              if (currentPlayer) {
-                const newHp = Math.max(
-                  0,
-                  currentPlayer.hp - payload.payload.damage,
-                )
+              const isDuplicate = gameLog[gameLog.length - 1] === logMessage
+              if (!isDuplicate && currentPlayer) {
+                const newHp = currentPlayer.hp - payload.payload.damage
+
                 const isDefeated = newHp <= 0
 
                 updatePlayer({
@@ -124,13 +128,25 @@ export default function RoomPage() {
                   isDefeated,
                 })
 
-                const gameLog = useBattleStore.getState().gameLog
-                const logMessage = `Opponent used ${payload.payload.move.name} for ${payload.payload.damage} damage!`
-                console.log('📡 REMOTE: Adding attack log:', logMessage)
                 useBattleStore.setState({
                   gameLog: [...gameLog, logMessage],
                   isMyTurn: true,
                   winner: isDefeated ? 'Opponent' : null,
+                })
+
+                // Broadcast HP update back to attacker
+                roomService.broadcastHpUpdate(gameId, userId, newHp, isDefeated)
+              }
+            }
+          },
+          onHpUpdate: (payload) => {
+            if (payload.payload.userId !== userId) {
+              const currentOpponent = useBattleStore.getState().opponent
+              if (currentOpponent) {
+                setOpponent({
+                  ...currentOpponent,
+                  hp: payload.payload.hp,
+                  isDefeated: payload.payload.isDefeated,
                 })
               }
             }

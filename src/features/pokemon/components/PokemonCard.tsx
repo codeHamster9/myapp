@@ -1,12 +1,11 @@
 import { DndContext } from '@dnd-kit/core'
-import { useState, useEffect } from 'react'
 
 import ElectricBorder from '@/components/ElectricBorder'
 import { Skeleton } from '@/components/ui/skeleton'
 import { roomService } from '@/services/roomService'
-import useBattleStore from '@/store/battleStore'
 
-import { usePokemon, useMoves } from '../services/pokemonService'
+import { useDefeatAnimation } from '../hooks/useDefeatAnimation'
+import { usePokemonCard } from '../hooks/usePokemonCard'
 import type { Move } from '../types/pokemon'
 
 import { HpBar } from './HpBar'
@@ -24,89 +23,23 @@ interface Props {
 }
 
 function PokemonCard({ type, gameId, userId }: Props) {
-  console.log('PokemonCard props:', { type, gameId, userId })
-  const winner = useBattleStore((state) => state.winner)
-  const isMyTurn = useBattleStore((state) => state.isMyTurn)
-  const player = useBattleStore((state) =>
-    type === 'player' ? state.player : state.opponent,
-  )
-  const otherPlayer = useBattleStore((state) =>
-    type === 'player' ? state.opponent : state.player,
-  )
-  const otherPlayerReady = otherPlayer?.ready || false
-  const clearAttackState = useBattleStore((state) => state.clearAttackState)
-  const clearDefeatState = useBattleStore((state) => state.clearDefeatState)
+  const {
+    player,
+    pokemon,
+    availableMoves,
+    setAvailableMoves,
+    updatePlayer,
+    isLoading,
+    maxMoves,
+    canStartGame,
+    isWinner,
+    isDefeated,
+    isMyTurn,
+    winner,
+    clearDefeatState,
+  } = usePokemonCard(type)
 
-  const isWinner = winner === (type === 'player' ? 'You' : 'Opponent')
-  const isDefeated = player?.isDefeated || false
-
-  // Calculate canStartGame locally
-  const canStartGame = (player?.ready || false) && otherPlayerReady
-  const { data: pokemon, isLoading: pokemonLoading } = usePokemon(
-    player?.id || 0,
-  )
-  const { movesWithData, isLoading: movesLoading } = useMoves(pokemon?.moves)
-
-  const [availableMoves, setAvailableMoves] = useState<Move[]>([])
-  const [defeatColor, setDefeatColor] = useState('#ff0000')
-  const defeatColors = [
-    '#ff0000',
-    '#00ff00',
-    '#0000ff',
-    '#ffff00',
-    '#ff00ff',
-    '#00ffff',
-    '#ffa500',
-  ]
-  const updatePlayer = useBattleStore((state) => state.updatePlayer)
-
-  const isLoading = pokemonLoading || movesLoading
-  const maxMoves = Math.min(6, movesWithData.length)
-
-  useEffect(() => {
-    if (movesWithData.length > 0) {
-      console.log('move set', pokemon?.id, 'moves:', movesWithData.length)
-
-      setAvailableMoves(movesWithData)
-
-      if (type === 'player' && player) {
-        updatePlayer({
-          hp: pokemon?.stats[0].base_stat || 0,
-        })
-        // Don't set opponent HP here - it should be set when opponent is created
-      }
-    }
-  }, [movesWithData, type, pokemon?.stats, updatePlayer, player])
-
-  useEffect(() => {
-    if (player?.isAttacked) {
-      const timer = setTimeout(() => {
-        clearAttackState(type)
-      }, 1000)
-      return () => clearTimeout(timer)
-    }
-  }, [player?.isAttacked, type, clearAttackState])
-
-  useEffect(() => {
-    if (isDefeated) {
-      let colorIndex = 0
-      const colorInterval = setInterval(() => {
-        setDefeatColor(defeatColors[colorIndex])
-        colorIndex = (colorIndex + 1) % defeatColors.length
-      }, 300)
-
-      const clearTimer = setTimeout(() => {
-        clearDefeatState(type)
-      }, 5000)
-
-      return () => {
-        clearInterval(colorInterval)
-        clearTimeout(clearTimer)
-      }
-    } else {
-      setDefeatColor('#ff0000')
-    }
-  }, [isDefeated, type, clearDefeatState])
+  const defeatColor = useDefeatAnimation(isDefeated, clearDefeatState, type)
 
   if (isLoading) {
     return (
@@ -157,40 +90,14 @@ function PokemonCard({ type, gameId, userId }: Props) {
   }
 
   function handleClick(move: Move) {
-    console.log('💆 Move clicked:', move.name, {
-      player: !!player,
-      movesLength: player?.moves.length,
-      maxMoves,
-      type,
-    })
-
-    if (!player || player.moves.length >= maxMoves || type !== 'player') {
-      console.log('❌ Move click blocked:', {
-        hasPlayer: !!player,
-        movesLength: player?.moves.length,
-        maxMoves,
-        type,
-      })
-      return
-    }
+    if (!player || player.moves.length >= maxMoves || type !== 'player') return
 
     const moves = [...player.moves, move]
     setAvailableMoves([...availableMoves.filter((m) => m.name !== move.name)])
     updatePlayer({ moves })
 
-    // Broadcast move selected event
     if (gameId && userId) {
-      console.log('🚀 Broadcasting move selection:', {
-        gameId,
-        userId,
-        move: move.name,
-      })
       roomService.broadcastMoveSelected(gameId, userId, move)
-    } else {
-      console.log('❌ Missing gameId or userId for broadcast:', {
-        gameId,
-        userId,
-      })
     }
 
     if (moves.length === maxMoves) {
@@ -211,7 +118,6 @@ function PokemonCard({ type, gameId, userId }: Props) {
         ready: newMoves.length === maxMoves,
       })
 
-      // Broadcast all selected moves
       if (gameId && userId) {
         randomMoves.forEach(async (move) =>
           roomService.broadcastMoveSelected(gameId, userId, move),
@@ -219,6 +125,14 @@ function PokemonCard({ type, gameId, userId }: Props) {
       }
     }
   }
+
+  const isDisabled =
+    type !== 'player' ||
+    !isMyTurn ||
+    !canStartGame ||
+    !!winner ||
+    player?.isAttacked ||
+    isDefeated
 
   const cardContent = (
     <div className="flex flex-col">
@@ -238,14 +152,7 @@ function PokemonCard({ type, gameId, userId }: Props) {
           <PokemonSelectedMoves
             pokemonId={player?.id || 0}
             moves={player?.moves || []}
-            disabled={
-              type !== 'player' ||
-              !isMyTurn ||
-              !canStartGame ||
-              !!winner ||
-              player?.isAttacked ||
-              isDefeated
-            }
+            disabled={isDisabled}
             gameId={gameId}
             userId={userId}
           />
