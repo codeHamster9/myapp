@@ -31,12 +31,13 @@ export const usePokemon = (id: number) => {
 }
 
 export const useMoves = (moves: Pokemon['moves'] | undefined) => {
+  // console.log('useMoves', moves?.length)
   return useQueries({
     queries: moves
       ? moves.map(({ move }) => ({
           queryKey: ['move', move.url],
           queryFn: async () => fetch(move.url).then(async (r) => r.json()),
-          enabled: !!move.url && !!moves,
+          enabled: !!move.url && !!moves.length,
           select: (data: Move) => ({
             ...data,
             name: move.name,

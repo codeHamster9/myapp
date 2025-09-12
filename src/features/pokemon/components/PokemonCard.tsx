@@ -60,15 +60,15 @@ function PokemonCard({ type }: Props) {
   const maxMoves = Math.min(6, movesWithData.length)
 
   useEffect(() => {
-    if (movesWithData.length > 0) {
+    if (movesWithData.length === 9) {
+      console.log('move set', pokemon?.id)
+
       setAvailableMoves(movesWithData)
-      // Set HP for both player and opponent
-      if (type === 'player' && player) {
+      if (player) {
         updatePlayer({
           hp: pokemon?.stats[0].base_stat || 0,
         })
       }
-      // Note: Opponent HP is handled in battleStore when opponent is set
     }
   }, [movesWithData, type, pokemon?.stats, updatePlayer])
 
@@ -196,7 +196,6 @@ function PokemonCard({ type }: Props) {
             pokemonId={player?.id || 0}
             moves={player?.moves || []}
             disabled={
-              type !== 'player' ||
               !isMyTurn ||
               !canStartGame ||
               !!winner ||
@@ -210,11 +209,7 @@ function PokemonCard({ type }: Props) {
           pokemonId={player?.id || 0}
           onClick={handleClick}
           onRandomSelectAll={handleRandomSelectAll}
-          isVisible={
-            type === 'player' &&
-            availableMoves.length > 0 &&
-            (player?.moves.length || 0) < maxMoves
-          }
+          isVisible={true}
         />
       </DndContext>
     </div>

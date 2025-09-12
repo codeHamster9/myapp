@@ -2,29 +2,21 @@ import { supabase } from '@/lib/supabase'
 
 export const roomService = {
   async createRoom(code: string, userId: string) {
-    // Create game
+    const pokemonId = Math.floor(Math.random() * 151) + 1
+
     const { data: game, error: gameError } = await supabase
       .from('games')
-      .insert({ code, status: 'waiting' })
-      .select()
-      .single()
-
-    if (gameError) throw gameError
-
-    // Add creator as player
-    const pokemonId = Math.floor(Math.random() * 151) + 1
-    const { data: player, error: playerError } = await supabase
-      .from('players')
       .insert({
-        game_id: game.id,
-        user_id: userId,
-        pokemon_id: pokemonId,
+        code,
+        status: 'waiting',
+        player1_user_id: userId,
+        player1_pokemon_id: pokemonId,
       })
       .select()
       .single()
 
-    if (playerError) throw playerError
-    return { game, player }
+    if (gameError) throw gameError
+    return { game }
   },
 
   async joinRoom(roomCode: string, userId: string) {
@@ -37,74 +29,77 @@ export const roomService = {
 
     if (gameError) throw gameError
 
-    // Add or update player (UPSERT)
-    const pokemonId = Math.floor(Math.random() * 151) + 1
-    const { data: player, error: playerError } = await supabase
-      .from('players')
-      .upsert(
-        {
-          game_id: game.id,
-          user_id: userId,
-          pokemon_id: pokemonId,
-        },
-        {
-          onConflict: 'game_id,user_id',
-        },
-      )
-      .select()
-      .single()
-
-    if (playerError) throw playerError
-
-    // Start game if 2 players
-    const players = await this.getGamePlayers(game.id)
-    if (players.length === 2) {
-      await supabase
-        .from('games')
-        .update({ status: 'in_progress' })
-        .eq('id', game.id)
+    // Check if user is already in game
+    if (game.player1_user_id === userId) {
+      return { game, isPlayer1: true }
+    }
+    if (game.player2_user_id === userId) {
+      return { game, isPlayer1: false }
     }
 
-    // Broadcast player joined event
-    await supabase.channel(`game-${game.id}`).send({
-      type: 'broadcast',
-      event: 'player_joined',
-      payload: {
-        userId,
-        pokemonId,
-        playerCount: players.length,
-      },
-    })
+    // Join as player2 if slot available
+    if (!game.player2_user_id) {
+      const pokemonId = Math.floor(Math.random() * 151) + 1
 
-    return { game, player }
+      const { data: updatedGame, error: updateError } = await supabase
+        .from('games')
+        .update({
+          player2_user_id: userId,
+          player2_pokemon_id: pokemonId,
+          status: 'in_progress',
+        })
+        .eq('id', game.id)
+        .select()
+        .single()
+
+      if (updateError) throw updateError
+
+      // Broadcast player joined event
+      await supabase.channel(`game-${game.id}`).send({
+        type: 'broadcast',
+        event: 'player_joined',
+        payload: { userId, pokemonId },
+      })
+
+      return { game: updatedGame, isPlayer1: false }
+    }
+
+    throw new Error('Game is full')
   },
 
-  async getGamePlayers(gameId: string) {
+  async getGame(gameId: string) {
     const { data, error } = await supabase
-      .from('players')
+      .from('games')
       .select('*')
-      .eq('game_id', gameId)
+      .eq('id', gameId)
+      .single()
 
     if (error) throw error
     return data
   },
 
   async leaveRoom(userId: string, gameId: string) {
-    // Remove player
-    await supabase
-      .from('players')
-      .delete()
-      .eq('game_id', gameId)
-      .eq('user_id', userId)
+    // Get current game
+    const game = await this.getGame(gameId)
 
-    // End game
-    await supabase.from('games').update({ status: 'ended' }).eq('id', gameId)
+    const updates: any = { status: 'ended' }
+
+    // Clear player data
+    if (game.player1_user_id === userId) {
+      updates.player1_user_id = null
+      updates.player1_pokemon_id = null
+    } else if (game.player2_user_id === userId) {
+      updates.player2_user_id = null
+      updates.player2_pokemon_id = null
+    }
+
+    await supabase.from('games').update(updates).eq('id', gameId)
 
     // Broadcast player left event
     await supabase.channel(`game-${gameId}`).send({
       type: 'broadcast',
       event: 'player_left',
-      payload: { userId }
+      payload: { userId },
     })
   },
 

@@ -39,41 +39,30 @@ export type Database = {
           id: string
           code: string
           status: 'waiting' | 'in_progress' | 'ended'
+          player1_user_id: string | null
+          player1_pokemon_id: number | null
+          player2_user_id: string | null
+          player2_pokemon_id: number | null
           created_at: string
         }
         Insert: {
           id?: string
           code: string
           status?: 'waiting' | 'in_progress' | 'ended'
+          player1_user_id?: string | null
+          player1_pokemon_id?: number | null
+          player2_user_id?: string | null
+          player2_pokemon_id?: number | null
           created_at?: string
         }
         Update: {
           id?: string
           code?: string
           status?: 'waiting' | 'in_progress' | 'ended'
-          created_at?: string
-        }
-      }
-      players: {
-        Row: {
-          id: string
-          game_id: string
-          user_id: string
-          pokemon_id: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          game_id: string
-          user_id: string
-          pokemon_id: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          game_id?: string
-          user_id?: string
-          pokemon_id?: number
+          player1_user_id?: string | null
+          player1_pokemon_id?: number | null
+          player2_user_id?: string | null
+          player2_pokemon_id?: number | null
           created_at?: string
         }
       }
