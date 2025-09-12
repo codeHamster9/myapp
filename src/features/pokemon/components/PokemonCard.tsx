@@ -42,6 +42,7 @@ function PokemonCard({ type }: Props) {
     player?.id || 0,
   )
   const { movesWithData, isLoading: movesLoading } = useMoves(pokemon?.moves)
+
   const [availableMoves, setAvailableMoves] = useState<Move[]>([])
   const [defeatColor, setDefeatColor] = useState('#ff0000')
   const defeatColors = [
@@ -61,11 +62,13 @@ function PokemonCard({ type }: Props) {
   useEffect(() => {
     if (movesWithData.length > 0) {
       setAvailableMoves(movesWithData)
+      // Set HP for both player and opponent
       if (type === 'player' && player) {
         updatePlayer({
           hp: pokemon?.stats[0].base_stat || 0,
         })
       }
+      // Note: Opponent HP is handled in battleStore when opponent is set
     }
   }, [movesWithData, type, pokemon?.stats, updatePlayer])
 

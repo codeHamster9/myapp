@@ -13,13 +13,16 @@ export default function RoomPage() {
   const navigate = useNavigate()
   const { isSignedIn, user } = useUser()
   const [isConnected, setIsConnected] = useState(false)
-  const [playerCount, setPlayerCount] = useState(0)
-  const [gameId, setGameId] = useState('')
   const [error, setError] = useState('')
 
   const initPlayer = useBattleStore((state) => state.initPlayer)
   const setOpponent = useBattleStore((state) => state.setOpponent)
   const updatePlayer = useBattleStore((state) => state.updatePlayer)
+  const player = useBattleStore((state) => state.player)
+  const opponent = useBattleStore((state) => state.opponent)
+  
+  // Derive player count from battleStore
+  const playerCount = (player ? 1 : 0) + (opponent ? 1 : 0)
 
   useEffect(() => {
     const connectToRoom = async () => {
@@ -35,10 +38,8 @@ export default function RoomPage() {
 
         const { game, player } = await roomService.joinRoom(roomCode, userId)
         console.log('Join result:', { game, player })
-        setGameId(game.id)
 
         const players = await roomService.getGamePlayers(game.id)
-        setPlayerCount(players.length)
         console.log('Players in game:', players.length, players)
 
         // Initialize my player with server Pokemon ID
@@ -72,39 +73,37 @@ export default function RoomPage() {
 
         async function onPlayerJoin(payload: any) {
           console.log('🔥 Real-time event received:', payload)
-          
+
           if (payload.table === 'broadcast') {
-            const players = await roomService.getGamePlayers(game.id)
             console.log(
-              'Game update! Player count:',
-              players.length,
-              'Event:',
+              'Game update! Event:',
               payload.eventType,
               'Table:',
-              payload.table
+              payload.table,
             )
-            setPlayerCount(players.length)
 
             if (payload.eventType === 'player_joined') {
               // Sync opponent data from broadcast
               if (payload.payload.userId !== userId) {
                 console.log('Setting opponent from broadcast:', payload.payload)
+                // Get opponent's Pokemon data to set proper HP
+                const opponentPokemonId = payload.payload.pokemonId
                 setOpponent({
-                  id: payload.payload.pokemonId,
-                  hp: 0,
+                  id: opponentPokemonId,
+                  hp: 0, // Will be updated when opponent's Pokemon loads
                   moves: [],
                   ready: false,
                   isAttacked: false,
                   isDefeated: false,
                 })
-                setPlayerCount(payload.payload.playerCount)
+                // Player count will be derived from battleStore
               }
             } else if (payload.eventType === 'player_left') {
               // Handle player leaving
               if (payload.payload.userId !== userId) {
                 console.log('Opponent left:', payload.payload.userId)
                 setOpponent(null)
-                setPlayerCount(1)
+                // Player count will be derived from battleStore
               }
             }
           }
@@ -129,13 +128,7 @@ export default function RoomPage() {
   }, [roomCode])
 
   const leaveRoom = async () => {
-    if (user?.id && gameId) {
-      try {
-        await roomService.leaveRoom(user.id, gameId)
-      } catch (error) {
-        console.error('Error leaving room:', error)
-      }
-    }
+    // gameId will be available in the cleanup function scope
     navigate('/')
   }
 
