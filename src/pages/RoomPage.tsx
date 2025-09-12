@@ -73,7 +73,7 @@ export default function RoomPage() {
         async function onPlayerJoin(payload: any) {
           console.log('🔥 Real-time event received:', payload)
           
-          if (payload.table === 'broadcast' && payload.eventType === 'player_joined') {
+          if (payload.table === 'broadcast') {
             const players = await roomService.getGamePlayers(game.id)
             console.log(
               'Game update! Player count:',
@@ -85,17 +85,27 @@ export default function RoomPage() {
             )
             setPlayerCount(players.length)
 
-            // Sync opponent data from broadcast
-            if (payload.payload.userId !== userId) {
-              console.log('Setting opponent from broadcast:', payload.payload)
-              setOpponent({
-                id: payload.payload.pokemonId,
-                hp: 0,
-                moves: [],
-                ready: false,
-                isAttacked: false,
-                isDefeated: false,
-              })
+            if (payload.eventType === 'player_joined') {
+              // Sync opponent data from broadcast
+              if (payload.payload.userId !== userId) {
+                console.log('Setting opponent from broadcast:', payload.payload)
+                setOpponent({
+                  id: payload.payload.pokemonId,
+                  hp: 0,
+                  moves: [],
+                  ready: false,
+                  isAttacked: false,
+                  isDefeated: false,
+                })
+                setPlayerCount(payload.payload.playerCount)
+              }
+            } else if (payload.eventType === 'player_left') {
+              // Handle player leaving
+              if (payload.payload.userId !== userId) {
+                console.log('Opponent left:', payload.payload.userId)
+                setOpponent(null)
+                setPlayerCount(1)
+              }
             }
           }
         }

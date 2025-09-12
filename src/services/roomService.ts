@@ -99,6 +99,13 @@ export const roomService = {
 
     // End game
     await supabase.from('games').update({ status: 'ended' }).eq('id', gameId)
+
+    // Broadcast player left event
+    await supabase.channel(`game-${gameId}`).send({
+      type: 'broadcast',
+      event: 'player_left',
+      payload: { userId }
+    })
   },
 
   async subscribeToGame(gameId: string, callback: (payload: any) => void) {
@@ -113,6 +120,10 @@ export const roomService = {
       .on('broadcast', { event: 'player_joined' }, (payload) => {
         console.log('🔥 Player joined broadcast:', payload)
         callback({ ...payload, table: 'broadcast', eventType: 'player_joined' })
+      })
+      .on('broadcast', { event: 'player_left' }, (payload) => {
+        console.log('🔥 Player left broadcast:', payload)
+        callback({ ...payload, table: 'broadcast', eventType: 'player_left' })
       })
       .subscribe((status) => {
         console.log('🔔 Subscription status:', status)
