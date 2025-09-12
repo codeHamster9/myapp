@@ -67,86 +67,76 @@ export default function RoomPage() {
             })
         }
 
-        console.log('Setting up subscription for game:', game.id)
-        const subscription = await roomService.subscribeToGame(
-          game.id,
-          onPlayerJoin,
-        )
-        console.log('Subscription created:', subscription)
-
-        async function onPlayerJoin(payload: any) {
-          if (payload.table === 'broadcast') {
-            if (payload.eventType === 'player_joined') {
-              // Sync opponent data from broadcast
-              if (payload.payload.userId !== userId) {
-                console.log('Setting opponent from broadcast:', payload.payload)
-                // Get opponent's Pokemon data to set proper HP
-                const opponentPokemonId = payload.payload.pokemonId
-                // Fetch opponent Pokemon to get max HP
-                fetch(`https://pokeapi.co/api/v2/pokemon/${opponentPokemonId}`)
-                  .then(async (res) => res.json())
-                  .then((pokemonData) => {
-                    setOpponent({
-                      id: opponentPokemonId,
-                      hp: pokemonData.stats[0].base_stat, // Set proper max HP
-                      moves: [],
-                      ready: false,
-                      isAttacked: false,
-                      isDefeated: false,
-                    })
-                  })
-              }
-            } else if (payload.eventType === 'player_left') {
-              if (payload.payload.userId !== userId) {
-                setOpponent(null)
-              }
-            } else if (payload.eventType === 'move_selected') {
-              if (payload.payload.userId !== userId) {
-                console.log('Opponent selected move:', payload.payload.move)
-                const currentOpponent = useBattleStore.getState().opponent
-                if (currentOpponent) {
-                  const newMoves = [
-                    ...currentOpponent.moves,
-                    payload.payload.move,
-                  ]
+        const subscription = await roomService.subscribeToGame(game.id, {
+          onPlayerJoined: (payload) => {
+            if (payload.payload.userId !== userId) {
+              console.log('Setting opponent from broadcast:', payload.payload)
+              const opponentPokemonId = payload.payload.pokemonId
+              fetch(`https://pokeapi.co/api/v2/pokemon/${opponentPokemonId}`)
+                .then(async (res) => res.json())
+                .then((pokemonData) => {
                   setOpponent({
-                    ...currentOpponent,
-                    moves: newMoves,
-                    ready: newMoves.length >= 6,
+                    id: opponentPokemonId,
+                    hp: pokemonData.stats[0].base_stat,
+                    moves: [],
+                    ready: false,
+                    isAttacked: false,
+                    isDefeated: false,
                   })
-                }
-              }
-            } else if (payload.eventType === 'attack') {
-              if (payload.payload.attackerId !== userId) {
-                const currentPlayer = useBattleStore.getState().player
-
-                if (currentPlayer) {
-                  const newHp = Math.max(
-                    0,
-                    currentPlayer.hp - payload.payload.damage,
-                  )
-                  const isDefeated = newHp <= 0
-
-                  updatePlayer({
-                    hp: newHp,
-                    isAttacked: true,
-                    isDefeated,
-                  })
-
-                  // Add to game log
-                  const gameLog = useBattleStore.getState().gameLog
-                  const logMessage = `Opponent used ${payload.payload.move.name} for ${payload.payload.damage} damage!`
-                  console.log('📡 REMOTE: Adding attack log:', logMessage)
-                  useBattleStore.setState({
-                    gameLog: [...gameLog, logMessage],
-                    isMyTurn: true,
-                    winner: isDefeated ? 'Opponent' : null,
-                  })
-                }
+                })
+            }
+          },
+          onPlayerLeft: ({ payload }) => {
+            if (payload.userId !== userId) {
+              console.log('Opponent left:', payload.payload.userId)
+              setOpponent(null)
+            }
+          },
+          onMoveSelected: ({ payload }) => {
+            if (payload.userId !== userId) {
+              console.log('Opponent selected move:', payload.move)
+              const currentOpponent = useBattleStore.getState().opponent
+              if (currentOpponent) {
+                const newMoves = [...currentOpponent.moves, payload.move]
+                setOpponent({
+                  ...currentOpponent,
+                  moves: newMoves,
+                  ready: newMoves.length >= 6,
+                })
               }
             }
-          }
-        }
+          },
+          onAttack: (payload) => {
+            if (payload.payload.attackerId !== userId) {
+              console.log('Opponent attacked:', payload.payload)
+              const currentPlayer = useBattleStore.getState().player
+
+              if (currentPlayer) {
+                const newHp = Math.max(
+                  0,
+                  currentPlayer.hp - payload.payload.damage,
+                )
+                const isDefeated = newHp <= 0
+
+                updatePlayer({
+                  hp: newHp,
+                  isAttacked: true,
+                  isDefeated,
+                })
+
+                const gameLog = useBattleStore.getState().gameLog
+                const logMessage = `Opponent used ${payload.payload.move.name} for ${payload.payload.damage} damage!`
+                console.log('📡 REMOTE: Adding attack log:', logMessage)
+                useBattleStore.setState({
+                  gameLog: [...gameLog, logMessage],
+                  isMyTurn: true,
+                  winner: isDefeated ? 'Opponent' : null,
+                })
+              }
+            }
+          },
+        })
+        console.log('Subscription created:', subscription)
 
         setIsConnected(true)
 

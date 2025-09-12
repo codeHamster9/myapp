@@ -145,7 +145,15 @@ export const roomService = {
     })
   },
 
-  async subscribeToGame(gameId: string, callback: (payload: any) => void) {
+  async subscribeToGame(
+    gameId: string, 
+    callbacks: {
+      onPlayerJoined: (payload: any) => void
+      onPlayerLeft: (payload: any) => void
+      onMoveSelected: (payload: any) => void
+      onAttack: (payload: any) => void
+    }
+  ) {
     console.log('🔔 Creating subscription for game:', gameId)
 
     const channel = supabase
@@ -156,23 +164,19 @@ export const roomService = {
       })
       .on('broadcast', { event: 'player_joined' }, (payload) => {
         console.log('🔥 Player joined broadcast:', payload)
-        callback({ ...payload, table: 'broadcast', eventType: 'player_joined' })
+        callbacks.onPlayerJoined(payload)
       })
       .on('broadcast', { event: 'player_left' }, (payload) => {
         console.log('🔥 Player left broadcast:', payload)
-        callback({ ...payload, table: 'broadcast', eventType: 'player_left' })
+        callbacks.onPlayerLeft(payload)
       })
       .on('broadcast', { event: 'move_selected' }, (payload) => {
         console.log('🔥 Move selected broadcast:', payload)
-        callback({ ...payload, table: 'broadcast', eventType: 'move_selected' })
+        callbacks.onMoveSelected(payload)
       })
       .on('broadcast', { event: 'attack' }, (payload) => {
         console.log('⚔️ Attack broadcast:', payload)
-        callback({ ...payload, table: 'broadcast', eventType: 'attack' })
-      })
-      .on('broadcast', { event: 'hp_update' }, (payload) => {
-        console.log('💖 HP update broadcast:', payload)
-        callback({ ...payload, table: 'broadcast', eventType: 'hp_update' })
+        callbacks.onAttack(payload)
       })
       .subscribe((status) => {
         console.log('🔔 Subscription status:', status)

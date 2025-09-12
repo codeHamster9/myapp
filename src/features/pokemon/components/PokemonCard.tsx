@@ -73,7 +73,8 @@ function PokemonCard({ type, gameId, userId }: Props) {
         updatePlayer({
           hp: pokemon?.stats[0].base_stat || 0,
         })
-      // Don't set opponent HP here - it should be set when opponent is created
+        // Don't set opponent HP here - it should be set when opponent is created
+      }
     }
   }, [movesWithData, type, pokemon?.stats, updatePlayer, player])
 
