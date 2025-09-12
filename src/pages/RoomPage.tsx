@@ -14,6 +14,7 @@ export default function RoomPage() {
   const { isSignedIn, user } = useUser()
   const [isConnected, setIsConnected] = useState(false)
   const [error, setError] = useState('')
+  const [gameId, setGameId] = useState('')
 
   const initPlayer = useBattleStore((state) => state.initPlayer)
   const setOpponent = useBattleStore((state) => state.setOpponent)
@@ -38,6 +39,8 @@ export default function RoomPage() {
 
         const { game, isPlayer1 } = await roomService.joinRoom(roomCode, userId)
         console.log('Join result:', { game, isPlayer1 })
+        setGameId(game.id)
+        console.log('Set gameId:', game.id)
 
         // Initialize my player with server Pokemon ID
         const myPokemonId = isPlayer1
@@ -91,6 +94,19 @@ export default function RoomPage() {
               if (payload.payload.userId !== userId) {
                 console.log('Opponent left:', payload.payload.userId)
                 setOpponent(null)
+              }
+            } else if (payload.eventType === 'move_selected') {
+              if (payload.payload.userId !== userId) {
+                console.log('Opponent selected move:', payload.payload.move)
+                const currentOpponent = useBattleStore.getState().opponent
+                if (currentOpponent) {
+                  const newMoves = [...currentOpponent.moves, payload.payload.move]
+                  setOpponent({
+                    ...currentOpponent,
+                    moves: newMoves,
+                    ready: newMoves.length >= 6
+                  })
+                }
               }
             }
           }
@@ -187,8 +203,8 @@ export default function RoomPage() {
           /* Battle Interface */
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <PokemonCard type="player" playerId={user?.id} />
-              {playerCount >= 2 && <PokemonCard type="opponent" />}
+              <PokemonCard type="player" playerId={user?.id} gameId={gameId} userId={user?.id} />
+              {playerCount >= 2 && <PokemonCard type="opponent" gameId={gameId} />}
             </div>
             <div className="lg:col-span-1">
               <BattleLog />

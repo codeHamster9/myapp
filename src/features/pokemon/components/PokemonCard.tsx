@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 
 import ElectricBorder from '@/components/ElectricBorder'
 import { Skeleton } from '@/components/ui/skeleton'
+import { roomService } from '@/services/roomService'
 import useBattleStore from '@/store/battleStore'
 
 import { usePokemon, useMoves } from '../services/pokemonService'
@@ -18,9 +19,12 @@ import { PokemonSelectedMoves } from './PokemonSelectedMoves'
 interface Props {
   type: 'player' | 'opponent'
   playerId?: string
+  gameId?: string
+  userId?: string
 }
 
-function PokemonCard({ type }: Props) {
+function PokemonCard({ type, gameId, userId }: Props) {
+  console.log('PokemonCard props:', { type, gameId, userId })
   const winner = useBattleStore((state) => state.winner)
   const isMyTurn = useBattleStore((state) => state.isMyTurn)
   const player = useBattleStore((state) =>
@@ -60,11 +64,11 @@ function PokemonCard({ type }: Props) {
   const maxMoves = Math.min(6, movesWithData.length)
 
   useEffect(() => {
-    if (movesWithData.length === 9) {
-      console.log('move set', pokemon?.id)
+    if (movesWithData.length > 0) {
+      console.log('move set', pokemon?.id, 'moves:', movesWithData.length)
 
       setAvailableMoves(movesWithData)
-      if (player) {
+      if (type === 'player' && player) {
         updatePlayer({
           hp: pokemon?.stats[0].base_stat || 0,
         })
@@ -151,11 +155,24 @@ function PokemonCard({ type }: Props) {
   }
 
   function handleClick(move: Move) {
-    if (!player || player.moves.length >= maxMoves || type !== 'player') return
+    console.log('💆 Move clicked:', move.name, { player: !!player, movesLength: player?.moves.length, maxMoves, type })
+    
+    if (!player || player.moves.length >= maxMoves || type !== 'player') {
+      console.log('❌ Move click blocked:', { hasPlayer: !!player, movesLength: player?.moves.length, maxMoves, type })
+      return
+    }
 
     const moves = [...player.moves, move]
     setAvailableMoves([...availableMoves.filter((m) => m.name !== move.name)])
     updatePlayer({ moves })
+
+    // Broadcast move selected event
+    if (gameId && userId) {
+      console.log('🚀 Broadcasting move selection:', { gameId, userId, move: move.name })
+      roomService.broadcastMoveSelected(gameId, userId, move)
+    } else {
+      console.log('❌ Missing gameId or userId for broadcast:', { gameId, userId })
+    }
 
     if (moves.length === maxMoves) {
       updatePlayer({ ready: true })
@@ -174,6 +191,11 @@ function PokemonCard({ type }: Props) {
         moves: newMoves,
         ready: newMoves.length === maxMoves,
       })
+
+      // Broadcast all selected moves
+      if (gameId && userId) {
+        randomMoves.forEach(move => roomService.broadcastMoveSelected(gameId, userId, move))
+      }
     }
   }
 
@@ -209,7 +231,11 @@ function PokemonCard({ type }: Props) {
           pokemonId={player?.id || 0}
           onClick={handleClick}
           onRandomSelectAll={handleRandomSelectAll}
-          isVisible={true}
+          isVisible={
+            type === 'player' &&
+            availableMoves.length > 0 &&
+            (player?.moves.length || 0) < maxMoves
+          }
         />
       </DndContext>
     </div>

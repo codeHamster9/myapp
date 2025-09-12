@@ -103,6 +103,16 @@ export const roomService = {
     })
   },
 
+  async broadcastMoveSelected(gameId: string, userId: string, move: any) {
+    console.log('📡 Sending move_selected broadcast:', { gameId, userId, move: move.name })
+    const result = await supabase.channel(`game-${gameId}`).send({
+      type: 'broadcast',
+      event: 'move_selected',
+      payload: { userId, move },
+    })
+    console.log('📡 Broadcast result:', result)
+  },
+
   async subscribeToGame(gameId: string, callback: (payload: any) => void) {
     console.log('🔔 Creating subscription for game:', gameId)
 
@@ -119,6 +129,10 @@ export const roomService = {
       .on('broadcast', { event: 'player_left' }, (payload) => {
         console.log('🔥 Player left broadcast:', payload)
         callback({ ...payload, table: 'broadcast', eventType: 'player_left' })
+      })
+      .on('broadcast', { event: 'move_selected' }, (payload) => {
+        console.log('🔥 Move selected broadcast:', payload)
+        callback({ ...payload, table: 'broadcast', eventType: 'move_selected' })
       })
       .subscribe((status) => {
         console.log('🔔 Subscription status:', status)
