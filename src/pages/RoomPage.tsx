@@ -14,7 +14,7 @@ export default function RoomPage() {
   const { isSignedIn, user } = useUser()
   const [isConnected, setIsConnected] = useState(false)
   const [playerCount, setPlayerCount] = useState(0)
-  // const [roomId, setRoomId] = useState('')
+  const [gameId, setGameId] = useState('')
   const [error, setError] = useState('')
 
   const initPlayer = useBattleStore((state) => state.initPlayer)
@@ -33,11 +33,13 @@ export default function RoomPage() {
 
         const userId = user.id
 
-        const { room, game, player } = await roomService.joinRoom(roomCode, userId)
+        const { game, player } = await roomService.joinRoom(roomCode, userId)
+        console.log('Join result:', { game, player })
+        setGameId(game.id)
 
         const players = await roomService.getGamePlayers(game.id)
         setPlayerCount(players.length)
-        console.log('Players in game:', players.length)
+        console.log('Players in game:', players.length, players)
 
         // Initialize my player with server Pokemon ID
         const myPlayer = players.find((p) => p.user_id === userId)
@@ -67,13 +69,17 @@ export default function RoomPage() {
         )
 
         async function onPlayerJoin(payload: any) {
-          if (payload.table === 'players') {
+          console.log('Real-time event received:', payload)
+          
+          if (payload.table === 'players' || payload.table === 'games') {
             const players = await roomService.getGamePlayers(game.id)
             console.log(
               'Game update! Player count:',
               players.length,
               'Event:',
               payload.eventType,
+              'Table:',
+              payload.table
             )
             setPlayerCount(players.length)
 
@@ -104,6 +110,10 @@ export default function RoomPage() {
 
         return () => {
           subscription.unsubscribe()
+          // Clean up when component unmounts
+          if (user?.id && game.id) {
+            roomService.leaveRoom(user.id, game.id)
+          }
         }
       } catch (err) {
         setError('Failed to join room')
@@ -114,7 +124,14 @@ export default function RoomPage() {
     connectToRoom()
   }, [roomCode])
 
-  const leaveRoom = () => {
+  const leaveRoom = async () => {
+    if (user?.id && gameId) {
+      try {
+        await roomService.leaveRoom(user.id, gameId)
+      } catch (error) {
+        console.error('Error leaving room:', error)
+      }
+    }
     navigate('/')
   }
 

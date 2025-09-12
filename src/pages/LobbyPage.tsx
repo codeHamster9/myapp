@@ -1,21 +1,15 @@
 import { useUser, SignInButton, UserButton } from '@clerk/clerk-react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { testConnection } from '@/lib/testSupabase'
 import { roomService } from '@/services/roomService'
 
 export default function LobbyPage() {
   const [roomCode, setRoomCode] = useState('')
-  const [isConnected, setIsConnected] = useState(false)
   const { isSignedIn, user } = useUser()
   const navigate = useNavigate()
-
-  useEffect(() => {
-    testConnection().then(setIsConnected)
-  }, [])
 
   const createRoom = async () => {
     if (!isSignedIn || !user) return

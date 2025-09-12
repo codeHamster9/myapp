@@ -34,34 +34,11 @@ export type Database = {
           created_at?: string
         }
       }
-      rooms: {
-        Row: {
-          id: string
-          code: string
-          status: 'waiting' | 'active' | 'finished'
-          player_ids: string[]
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          code: string
-          status?: 'waiting' | 'active' | 'finished'
-          player_ids?: string[]
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          code?: string
-          status?: 'waiting' | 'active' | 'finished'
-          player_ids?: string[]
-          created_at?: string
-        }
-      }
       games: {
         Row: {
           id: string
-          room_id: string
-          status: 'setup' | 'playing' | 'finished'
+          code: string
+          status: 'waiting' | 'in_progress' | 'ended'
           current_player_id: string | null
           winner_id: string | null
           turn_number: number
@@ -69,8 +46,8 @@ export type Database = {
         }
         Insert: {
           id?: string
-          room_id: string
-          status?: 'setup' | 'playing' | 'finished'
+          code: string
+          status?: 'waiting' | 'in_progress' | 'ended'
           current_player_id?: string | null
           winner_id?: string | null
           turn_number?: number
@@ -78,8 +55,8 @@ export type Database = {
         }
         Update: {
           id?: string
-          room_id?: string
-          status?: 'setup' | 'playing' | 'finished'
+          code?: string
+          status?: 'waiting' | 'in_progress' | 'ended'
           current_player_id?: string | null
           winner_id?: string | null
           turn_number?: number
