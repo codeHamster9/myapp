@@ -136,24 +136,43 @@ export const roomService = {
     })
   },
 
-  async broadcastHpUpdate(gameId: string, userId: string, hp: number, isDefeated: boolean) {
-    console.log('💖 Sending HP update broadcast:', { gameId, userId, hp, isDefeated })
+  async broadcastHpUpdate(
+    gameId: string,
+    userId: string,
+    hp: number,
+    isDefeated: boolean,
+  ) {
+    console.log('💖 Sending HP update broadcast:', {
+      gameId,
+      userId,
+      hp,
+      isDefeated,
+    })
     await supabase.channel(`game-${gameId}`).send({
       type: 'broadcast',
       event: 'hp_update',
-      payload: { userId, hp, isDefeated }
+      payload: { userId, hp, isDefeated },
+    })
+  },
+
+  async broadcastWinner(gameId: string, winnerId: string) {
+    await supabase.channel(`game-${gameId}`).send({
+      type: 'broadcast',
+      event: 'winner',
+      payload: { winnerId },
     })
   },
 
   async subscribeToGame(
-    gameId: string, 
+    gameId: string,
     callbacks: {
       onPlayerJoined: (payload: any) => void
       onPlayerLeft: (payload: any) => void
       onMoveSelected: (payload: any) => void
       onAttack: (payload: any) => void
       onHpUpdate: (payload: any) => void
-    }
+      onWinner: (payload: any) => void
+    },
   ) {
     const channel = supabase
       .channel(`game-${gameId}`, {
@@ -166,6 +185,7 @@ export const roomService = {
       .on('broadcast', { event: 'move_selected' }, callbacks.onMoveSelected)
       .on('broadcast', { event: 'attack' }, callbacks.onAttack)
       .on('broadcast', { event: 'hp_update' }, callbacks.onHpUpdate)
+      .on('broadcast', { event: 'winner' }, callbacks.onWinner)
       .subscribe()
 
     return channel

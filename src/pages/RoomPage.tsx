@@ -118,9 +118,18 @@ export default function RoomPage() {
 
               const isDuplicate = gameLog[gameLog.length - 1] === logMessage
               if (!isDuplicate && currentPlayer) {
-                const newHp = currentPlayer.hp - payload.payload.damage
-
+                const newHp = Math.max(
+                  0,
+                  currentPlayer.hp - payload.payload.damage,
+                )
                 const isDefeated = newHp <= 0
+                
+                console.log('HP calculation:', {
+                  currentHp: currentPlayer.hp,
+                  damage: payload.payload.damage,
+                  newHp,
+                  isDefeated
+                })
 
                 updatePlayer({
                   hp: newHp,
@@ -136,19 +145,50 @@ export default function RoomPage() {
 
                 // Broadcast HP update back to attacker
                 roomService.broadcastHpUpdate(gameId, userId, newHp, isDefeated)
+
+                // Broadcast winner status if defeated
+                if (isDefeated) {
+                  console.log(
+                    'Broadcasting winner:',
+                    payload.payload.attackerId,
+                  )
+                  roomService.broadcastWinner(
+                    gameId,
+                    payload.payload.attackerId,
+                  )
+                }
               }
             }
           },
           onHpUpdate: (payload) => {
+            console.log('HP Update received:', payload.payload, 'My ID:', userId)
             if (payload.payload.userId !== userId) {
               const currentOpponent = useBattleStore.getState().opponent
+              console.log('Updating opponent HP:', payload.payload.hp, 'Current opponent:', currentOpponent)
               if (currentOpponent) {
                 setOpponent({
                   ...currentOpponent,
                   hp: payload.payload.hp,
                   isDefeated: payload.payload.isDefeated,
                 })
+                
+                // Set winner if opponent is defeated
+                if (payload.payload.isDefeated) {
+                  useBattleStore.setState({ winner: 'You' })
+                }
               }
+            }
+          },
+          onWinner: (payload) => {
+            console.log(
+              'Received winner broadcast:',
+              payload.payload.winnerId,
+              'My ID:',
+              userId,
+            )
+            if (payload.payload.winnerId === userId) {
+              console.log('Setting winner to You')
+              useBattleStore.setState({ winner: 'You' })
             }
           },
         })

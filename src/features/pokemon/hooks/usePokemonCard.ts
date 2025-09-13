@@ -35,15 +35,13 @@ export function usePokemonCard(type: 'player' | 'opponent') {
   useEffect(() => {
     if (movesWithData.length > 0) {
       setAvailableMoves(movesWithData)
-      if (type === 'player') {
-        console.log('HP updated to init')
-
+      if (type === 'player' && (player?.hp || 0) === 0) {
         updatePlayer({
           hp: pokemon?.stats[0].base_stat || 0,
         })
       }
     }
-  }, [movesWithData, type, pokemon?.stats, updatePlayer])
+  }, [movesWithData, type, pokemon?.stats, updatePlayer, player?.hp])
 
   useEffect(() => {
     if (player?.isAttacked) {
