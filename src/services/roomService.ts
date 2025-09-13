@@ -11,6 +11,10 @@ export const roomService = {
         status: 'waiting',
         player1_user_id: userId,
         player1_pokemon_id: pokemonId,
+        player1_hp: 0,
+        player1_moves: [],
+        player1_ready: false,
+        current_turn: 1,
       })
       .select()
       .single()
@@ -46,6 +50,9 @@ export const roomService = {
         .update({
           player2_user_id: userId,
           player2_pokemon_id: pokemonId,
+          player2_hp: 0,
+          player2_moves: [],
+          player2_ready: false,
           status: 'in_progress',
         })
         .eq('id', game.id)
@@ -53,18 +60,22 @@ export const roomService = {
         .single()
 
       if (updateError) throw updateError
-
-      // Broadcast player joined event
-      await supabase.channel(`game-${game.id}`).send({
-        type: 'broadcast',
-        event: 'player_joined',
-        payload: { userId, pokemonId },
-      })
-
       return { game: updatedGame, isPlayer1: false }
     }
 
     throw new Error('Game is full')
+  },
+
+  async initializePlayerHp(gameId: string, userId: string, hp: number) {
+    const game = await this.getGame(gameId)
+    const isPlayer1 = game.player1_user_id === userId
+
+    await supabase
+      .from('games')
+      .update({
+        [isPlayer1 ? 'player1_hp' : 'player2_hp']: hp,
+      })
+      .eq('id', gameId)
   },
 
   async getGame(gameId: string) {
@@ -79,115 +90,110 @@ export const roomService = {
   },
 
   async leaveRoom(userId: string, gameId: string) {
-    // Get current game
+    await supabase.from('games').update({ status: 'ended' }).eq('id', gameId)
+  },
+
+  async updatePlayerMoves(gameId: string, userId: string, moves: any[]) {
     const game = await this.getGame(gameId)
+    const isPlayer1 = game.player1_user_id === userId
 
-    const updates: any = { status: 'ended' }
+    await supabase
+      .from('games')
+      .update({
+        [isPlayer1 ? 'player1_moves' : 'player2_moves']: moves,
+        [isPlayer1 ? 'player1_ready' : 'player2_ready']: moves.length >= 6,
+      })
+      .eq('id', gameId)
+  },
 
-    // Clear player data
-    if (game.player1_user_id === userId) {
-      updates.player1_user_id = null
-      updates.player1_pokemon_id = null
-    } else if (game.player2_user_id === userId) {
-      updates.player2_user_id = null
-      updates.player2_pokemon_id = null
+  async updatePlayerHp(gameId: string, userId: string, hp: number) {
+    const game = await this.getGame(gameId)
+    const isPlayer1 = game.player1_user_id === userId
+
+    const updates: any = {
+      [isPlayer1 ? 'player1_hp' : 'player2_hp']: hp,
+    }
+
+    if (hp <= 0) {
+      const winnerId = isPlayer1 ? game.player2_user_id : game.player1_user_id
+      updates.winner_user_id = winnerId
+      updates.status = 'finished'
     }
 
     await supabase.from('games').update(updates).eq('id', gameId)
-
-    // Broadcast player left event
-    await supabase.channel(`game-${gameId}`).send({
-      type: 'broadcast',
-      event: 'player_left',
-      payload: { userId },
-    })
   },
 
-  async broadcastMoveSelected(gameId: string, userId: string, move: any) {
-    console.log('📡 Sending move_selected broadcast:', {
-      gameId,
-      userId,
-      move: move.name,
-    })
-    const result = await supabase.channel(`game-${gameId}`).send({
-      type: 'broadcast',
-      event: 'move_selected',
-      payload: { userId, move },
-    })
-    console.log('📡 Broadcast result:', result)
-  },
-
-  async broadcastAttack(
+  async processAttack(
     gameId: string,
     attackerId: string,
     move: any,
     damage: number,
   ) {
-    console.log('⚔️ Sending attack broadcast:', {
-      gameId,
-      attackerId,
-      move: move.name,
-      damage,
-    })
-    await supabase.channel(`game-${gameId}`).send({
-      type: 'broadcast',
-      event: 'attack',
-      payload: { attackerId, move, damage },
-    })
+    const game = await this.getGame(gameId)
+    const isAttackerPlayer1 = game.player1_user_id === attackerId
+    const defenderHp = isAttackerPlayer1 ? game.player2_hp : game.player1_hp
+    const newHp = Math.max(0, defenderHp - damage)
+
+    const updates: any = {
+      [isAttackerPlayer1 ? 'player2_hp' : 'player1_hp']: newHp,
+      current_turn: isAttackerPlayer1 ? 2 : 1,
+      game_log: [
+        ...(game.game_log || []),
+        `${isAttackerPlayer1 ? 'Player 1' : 'Player 2'} used ${move.name} for ${damage} damage!`,
+      ],
+    }
+
+    if (newHp <= 0) {
+      updates.winner_user_id = attackerId
+      updates.status = 'finished'
+    }
+
+    await supabase.from('games').update(updates).eq('id', gameId)
   },
 
-  async broadcastHpUpdate(
+  async subscribeToGameState(gameId: string, callback: (game: any) => void) {
+    // Subscribe to database changes
+    const channel = supabase
+      .channel(`game-state-${gameId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'games',
+          filter: `id=eq.${gameId}`,
+        },
+        callback,
+      )
+      .subscribe()
+
+    return channel
+  },
+
+  async subscribeToPresence(
     gameId: string,
     userId: string,
-    hp: number,
-    isDefeated: boolean,
-  ) {
-    console.log('💖 Sending HP update broadcast:', {
-      gameId,
-      userId,
-      hp,
-      isDefeated,
-    })
-    await supabase.channel(`game-${gameId}`).send({
-      type: 'broadcast',
-      event: 'hp_update',
-      payload: { userId, hp, isDefeated },
-    })
-  },
-
-  async broadcastWinner(gameId: string, winnerId: string) {
-    await supabase.channel(`game-${gameId}`).send({
-      type: 'broadcast',
-      event: 'winner',
-      payload: { winnerId },
-    })
-  },
-
-  async subscribeToGame(
-    gameId: string,
     callbacks: {
-      onPlayerJoined: (payload: any) => void
-      onPlayerLeft: (payload: any) => void
-      onMoveSelected: (payload: any) => void
-      onAttack: (payload: any) => void
-      onHpUpdate: (payload: any) => void
-      onWinner: (payload: any) => void
+      onJoin: (presence: any) => void
+      onLeave: (presence: any) => void
     },
   ) {
     const channel = supabase
-      .channel(`game-${gameId}`, {
+      .channel(`presence-${gameId}`, {
         config: {
-          broadcast: { self: false },
+          presence: {
+            key: userId,
+          },
         },
       })
-      .on('broadcast', { event: 'player_joined' }, callbacks.onPlayerJoined)
-      .on('broadcast', { event: 'player_left' }, callbacks.onPlayerLeft)
-      .on('broadcast', { event: 'move_selected' }, callbacks.onMoveSelected)
-      .on('broadcast', { event: 'attack' }, callbacks.onAttack)
-      .on('broadcast', { event: 'hp_update' }, callbacks.onHpUpdate)
-      .on('broadcast', { event: 'winner' }, callbacks.onWinner)
+      .on('presence', { event: 'join' }, callbacks.onJoin)
+      .on('presence', { event: 'leave' }, callbacks.onLeave)
       .subscribe()
 
+    await channel.track({
+      user_id: userId,
+      online_at: new Date().toISOString(),
+    })
     return channel
   },
 }

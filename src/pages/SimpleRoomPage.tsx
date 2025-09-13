@@ -3,15 +3,13 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router'
 
 import { Button } from '@/components/ui/button'
-import PokemonCard from '@/features/pokemon/components/PokemonCard'
 import { supabase } from '@/lib/supabase'
 
-export default function RoomPage() {
+export default function SimpleRoomPage() {
   const { roomCode } = useParams()
   const navigate = useNavigate()
   const { isSignedIn, user } = useUser()
   const [connectedUsers, setConnectedUsers] = useState<any[]>([])
-  const [pokemonId, setPokemonId] = useState<number | null>(null)
 
   useEffect(() => {
     if (!isSignedIn || !user || !roomCode) return
@@ -50,57 +48,38 @@ export default function RoomPage() {
         <div className="bg-card rounded-lg p-6 mb-6">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold">Room: {roomCode}</h1>
-            <Button onClick={async () => navigate('/')} variant="outline">
+            <Button onClick={() => navigate('/')} variant="outline">
               Leave Room
             </Button>
           </div>
-
+          
           <div className="mb-4">
             <h2 className="text-lg font-semibold mb-2">
               Connected Users ({connectedUsers.length})
             </h2>
             <div className="space-y-2">
-              {connectedUsers.map((connectedUser, index) => (
+              {connectedUsers.map((user, index) => (
                 <div
                   key={index}
                   className="flex items-center gap-3 p-3 bg-muted rounded-lg"
                 >
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="font-medium">{connectedUser.username}</span>
+                  <span className="font-medium">{user.username}</span>
                   <span className="text-sm text-muted-foreground">
-                    {connectedUser.user_id === user?.id ? '(You)' : ''}
+                    {user.user_id === user?.id ? '(You)' : ''}
                   </span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="space-y-3">
-            <Button
-              onClick={() => setPokemonId(Math.floor(Math.random() * 151) + 1)}
-              className="w-full"
-            >
-              Roll Pokemon
-            </Button>
-
-            <Button
-              onClick={async () =>
-                navigator.clipboard.writeText(roomCode || '')
-              }
-              className="w-full"
-              variant="outline"
-            >
-              Copy Room Code
-            </Button>
-          </div>
+          <Button
+            onClick={() => navigator.clipboard.writeText(roomCode || '')}
+            className="w-full"
+          >
+            Copy Room Code
+          </Button>
         </div>
-
-        {pokemonId && (
-          <div className="bg-card rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">Your Pokemon</h2>
-            <PokemonCard type="player" pokemonId={pokemonId} />
-          </div>
-        )}
       </div>
     </div>
   )

@@ -14,124 +14,90 @@ interface Player {
 }
 
 interface BattleState {
-  player: Player | null
-  opponent: Player | null
-  isMyTurn: boolean
-  gameLog: string[]
-  winner: string | null
+  gameState: any | null
+  userId: string | null
+  isPlayer1: boolean
 }
 
 interface BattleActions {
-  initPlayer: () => void
-  setOpponent: (opponentData: Player) => void
+  setGameState: (gameState: any) => void
+  setUser: (userId: string, isPlayer1: boolean) => void
+  getPlayer: () => Player | null
+  getOpponent: () => Player | null
+  isMyTurn: () => boolean
   canStartGame: () => boolean
-  updatePlayer: (updates: Partial<Omit<Player, 'id'>>) => void
-  updateOpponent: (updates: Partial<Omit<Player, 'id'>>) => void
-  handleMove: (move: Move) => void
-  clearAttackState: (target: 'player' | 'opponent') => void
-  clearDefeatState: (target: 'player' | 'opponent') => void
+  getWinner: () => string | null
 }
 
 const getRandomPokemonId = () => Math.floor(Math.random() * 151) + 1
 
 const initialState = {
-  player: null,
-  opponent: null,
-  isMyTurn: true,
-  gameLog: [],
-  winner: null,
+  gameState: null,
+  userId: null,
+  isPlayer1: false,
 }
 
 const useBattleStore = create<BattleState & BattleActions>()(
   devtools(
     immer((set, get) => ({
       ...initialState,
-      // Actions
-      initPlayer: () => {
+      
+      setGameState: (gameState: any) => {
         set((state) => {
-          state.player = {
-            id: getRandomPokemonId(),
-            ready: false,
-            hp: 0,
-            moves: [],
-            isAttacked: false,
-            isDefeated: false,
-          }
-          state.opponent = null
-          state.isMyTurn = true
-          state.gameLog = []
-          state.winner = null
+          state.gameState = gameState
         })
       },
-
-      setOpponent: (opponentData: Player | null) => {
+      
+      setUser: (userId: string, isPlayer1: boolean) => {
         set((state) => {
-          state.opponent = opponentData
+          state.userId = userId
+          state.isPlayer1 = isPlayer1
         })
       },
-
-      updatePlayer: (updates: Partial<Omit<Player, 'id'>>) => {
-        set((state) => {
-          if (state.player) {
-            Object.assign(state.player, updates)
-          }
-        })
-      },
-
-      updateOpponent: (updates: Partial<Omit<Player, 'id'>>) => {
-        set((state) => {
-          if (state.opponent) {
-            Object.assign(state.opponent, updates)
-          }
-        })
-      },
-
-      handleMove: (move: Move, gameId?: string, userId?: string) => {
-        const { player, opponent } = get()
-
-        if (!player || !opponent) return
-
-        // Calculate damage between 0 and maxDamage (move power)
-        const maxDamage = move.power || 40
-        const damage = Math.floor(Math.random() * maxDamage)
-
-        // Only update local state (attacker's view) - no opponent damage here
-        set((state) => {
-          state.gameLog.push(`You used ${move.name}!`)
-          state.isMyTurn = false
-        })
-
-        // Broadcast attack to opponent (they will handle the damage)
-        if (gameId && userId) {
-          import('@/services/roomService').then(({ roomService }) => {
-            roomService.broadcastAttack(gameId, userId, move, damage)
-          })
+      
+      getPlayer: () => {
+        const { gameState, userId, isPlayer1 } = get()
+        if (!gameState || !userId) return null
+        
+        return {
+          id: isPlayer1 ? gameState.player1_pokemon_id : gameState.player2_pokemon_id,
+          hp: isPlayer1 ? gameState.player1_hp : gameState.player2_hp,
+          moves: isPlayer1 ? gameState.player1_moves : gameState.player2_moves,
+          ready: isPlayer1 ? gameState.player1_ready : gameState.player2_ready,
+          isAttacked: false,
+          isDefeated: (isPlayer1 ? gameState.player1_hp : gameState.player2_hp) <= 0,
         }
       },
-
+      
+      getOpponent: () => {
+        const { gameState, userId, isPlayer1 } = get()
+        if (!gameState || !userId) return null
+        
+        return {
+          id: !isPlayer1 ? gameState.player1_pokemon_id : gameState.player2_pokemon_id,
+          hp: !isPlayer1 ? gameState.player1_hp : gameState.player2_hp,
+          moves: !isPlayer1 ? gameState.player1_moves : gameState.player2_moves,
+          ready: !isPlayer1 ? gameState.player1_ready : gameState.player2_ready,
+          isAttacked: false,
+          isDefeated: (!isPlayer1 ? gameState.player1_hp : gameState.player2_hp) <= 0,
+        }
+      },
+      
+      isMyTurn: () => {
+        const { gameState, isPlayer1 } = get()
+        if (!gameState) return false
+        return (gameState.current_turn === 1 && isPlayer1) || (gameState.current_turn === 2 && !isPlayer1)
+      },
+      
       canStartGame: () => {
-        const { player, opponent } = get()
-        return player?.ready && opponent?.ready
+        const { gameState } = get()
+        return gameState?.player1_ready && gameState?.player2_ready
       },
-
-      clearAttackState: (target: 'player' | 'opponent') => {
-        set((state) => {
-          if (target === 'player' && state.player) {
-            state.player.isAttacked = false
-          } else if (target === 'opponent' && state.opponent) {
-            state.opponent.isAttacked = false
-          }
-        })
-      },
-
-      clearDefeatState: (target: 'player' | 'opponent') => {
-        set((state) => {
-          if (target === 'player' && state.player) {
-            state.player.isDefeated = false
-          } else if (target === 'opponent' && state.opponent) {
-            state.opponent.isDefeated = false
-          }
-        })
+      
+      getWinner: () => {
+        const { gameState, userId } = get()
+        if (!gameState?.winner_user_id) return null
+        return gameState.winner_user_id === userId ? 'You' : 'Opponent'
       },
     })),
     { name: 'battle-store' },
@@ -139,3 +105,4 @@ const useBattleStore = create<BattleState & BattleActions>()(
 )
 
 export default useBattleStore
+export type { Player }
