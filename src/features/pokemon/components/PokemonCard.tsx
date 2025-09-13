@@ -11,19 +11,16 @@ import { PokemonSelectedMoves } from './PokemonSelectedMoves'
 interface Props {
   type: 'player' | 'opponent'
   pokemonId?: number
+  roomCode?: string
+  userId?: string
 }
 
-function PokemonCard({ type, pokemonId = 1 }: Props) {
-  const {
-    pokemon,
-    availableMoves,
-    setAvailableMoves,
-    selectedMoves,
-    setSelectedMoves,
-    hp,
-    isLoading,
-    maxMoves,
-  } = usePokemonCard(pokemonId)
+function PokemonCard({ pokemonId = 1, roomCode, userId }: Props) {
+  const { pokemon, availableMoves, hp, isLoading } = usePokemonCard(
+    pokemonId,
+    roomCode || '',
+    userId || '',
+  )
 
   // Auto-select first 6 moves when available
   const preSelectedMoves = availableMoves.slice(0, 6)

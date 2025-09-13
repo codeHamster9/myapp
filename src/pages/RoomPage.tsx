@@ -12,6 +12,8 @@ export default function RoomPage() {
   const { isSignedIn, user } = useUser()
   const [connectedUsers, setConnectedUsers] = useState<any[]>([])
   const [pokemonId, setPokemonId] = useState<number | null>(null)
+  const [allPokemonData, setAllPokemonData] = useState<any[]>([])
+  const [hasRolled, setHasRolled] = useState(false)
 
   useEffect(() => {
     if (!isSignedIn || !user || !roomCode) return
@@ -23,6 +25,22 @@ export default function RoomPage() {
         const users = Object.values(state).flat()
         setConnectedUsers(users)
       })
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pokemon_data',
+          filter: `room_code=eq.${roomCode}`,
+        },
+        (payload) => {
+          console.log('Database change detected:', payload)
+          fetchAllPokemonData()
+        },
+      )
+      .on('broadcast', { event: 'pokemon_updated' }, () => {
+        fetchAllPokemonData()
+      })
       .subscribe()
 
     channel.track({
@@ -31,10 +49,34 @@ export default function RoomPage() {
       online_at: new Date().toISOString(),
     })
 
+    fetchAllPokemonData()
+
     return () => {
       channel.unsubscribe()
     }
   }, [roomCode, isSignedIn, user])
+
+  const fetchAllPokemonData = async () => {
+    if (!roomCode) return
+
+    console.log('Fetching pokemon data for room:', roomCode)
+    const { data, error } = await supabase
+      .from('pokemon_data')
+      .select('*')
+      .eq('room_code', roomCode)
+
+    if (error) {
+      console.error('Error fetching pokemon data:', error)
+    } else {
+      console.log('Fetched pokemon data:', data)
+    }
+
+    setAllPokemonData(data || [])
+
+    // Check if current user has already rolled
+    const userHasRolled = data?.some((d) => d.user_id === user?.id)
+    setHasRolled(!!userHasRolled)
+  }
 
   if (!isSignedIn) {
     return (
@@ -77,10 +119,15 @@ export default function RoomPage() {
 
           <div className="space-y-3">
             <Button
-              onClick={() => setPokemonId(Math.floor(Math.random() * 151) + 1)}
+              onClick={() => {
+                const newId = Math.floor(Math.random() * 151) + 1
+                console.log('Rolling pokemon ID:', newId)
+                setPokemonId(newId)
+              }}
               className="w-full"
+              disabled={hasRolled}
             >
-              Roll Pokemon
+              {hasRolled ? 'Pokemon Already Rolled' : 'Roll Pokemon'}
             </Button>
 
             <Button
@@ -95,10 +142,45 @@ export default function RoomPage() {
           </div>
         </div>
 
-        {pokemonId && (
+        {/* All Pokemon in Room */}
+        {allPokemonData.length > 0 && (
+          <div className="bg-card rounded-lg p-6 mb-6">
+            <h2 className="text-lg font-semibold mb-4">Pokemon in Room</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {allPokemonData.map((data) => {
+                const isMyPokemon = data.user_id === user?.id
+                const username =
+                  connectedUsers.find((u) => u.user_id === data.user_id)
+                    ?.username || 'Unknown'
+
+                return (
+                  <div key={data.id} className="space-y-2">
+                    <h3 className="text-sm font-medium">
+                      {isMyPokemon ? 'Your Pokemon' : `${username}'s Pokemon`}
+                    </h3>
+                    <PokemonCard
+                      type={isMyPokemon ? 'player' : 'opponent'}
+                      pokemonId={data.pokemon_id}
+                      roomCode={roomCode}
+                      userId={data.user_id}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Show local pokemon while syncing */}
+        {pokemonId && !allPokemonData.some((d) => d.user_id === user?.id) && (
           <div className="bg-card rounded-lg p-6">
             <h2 className="text-lg font-semibold mb-4">Your Pokemon</h2>
-            <PokemonCard type="player" pokemonId={pokemonId} />
+            <PokemonCard
+              type="player"
+              pokemonId={pokemonId}
+              roomCode={roomCode}
+              userId={user?.id}
+            />
           </div>
         )}
       </div>
