@@ -41,12 +41,7 @@ export default function RoomPage() {
       .on('broadcast', { event: 'pokemon_updated' }, () => {
         fetchAllPokemonData()
       })
-      .on('broadcast', { event: 'attack' }, (payload) => {
-        console.log('Attack received:', payload.payload)
-        const { damage, moveName, attackerId, pokemonId } = payload.payload
-        const attackerName = connectedUsers.find(u => u.user_id === attackerId)?.username || 'Unknown'
-        console.log(`${attackerName}'s Pokemon used ${moveName} for ${damage} damage!`)
-      })
+
       .subscribe()
 
     channel.track({

@@ -39,14 +39,15 @@ export const useMoves = (moves: Pokemon['moves'] | undefined) => {
           queryFn: async () => fetch(move.url).then(async (r) => r.json()),
           enabled: !!move.url && !!moves.length,
           select: (data: Move) => ({
-            ...data,
             name: move.name,
-            power: data.power || 40,
-            accuracy: data.accuracy || 100,
+            power: data.power,
+            accuracy: data.accuracy,
+            pp: data.pp,
+            type: data?.type.name,
           }),
         }))
       : [],
-    combine: (results) => ({
+    combine: (results) => ({ 
       movesWithData: results
         .filter((query) => query.isSuccess && query.data)
         .map((query) => query.data!),

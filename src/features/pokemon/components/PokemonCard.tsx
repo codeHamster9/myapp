@@ -46,8 +46,6 @@ function PokemonCard({ pokemonId = 1, roomCode, userId }: Props) {
         pokemonId={pokemonId}
         moves={preSelectedMoves}
         disabled={false}
-        roomCode={roomCode}
-        userId={userId}
       />
     </div>
   )
